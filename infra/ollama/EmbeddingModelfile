@@ -1,0 +1,2 @@
+FROM nomic-embed-text:v1.5
+PARAMETER num_ctx 8192

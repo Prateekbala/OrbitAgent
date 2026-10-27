@@ -1,0 +1,12 @@
+Landscape poster, video, and reference serif used for the requested recreation of the supplied Notia reference:
+https://notia.framer.website/
+https://framerusercontent.com/images/1CRrdkDugfLbiLqNKYDH5Bqks0g.png
+https://framerusercontent.com/assets/T9dtgEza4UVy34nZ5TYnNTxThw.mp4
+
+Reference serif source: https://framerusercontent.com/assets/nPTsv0pF51tkrOzAMoJvshgOHA.woff2
+
+Inter Tight: Google Fonts, SIL Open Font License 1.1.
+See INTER-TIGHT-LICENSE.txt in this directory.
+https://github.com/google/fonts/tree/main/ofl/intertight
+
+Product previews, Orbit copy, layout implementation, and interactions are authored in this repository.

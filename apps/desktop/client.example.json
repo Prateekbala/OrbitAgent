@@ -1,0 +1,7 @@
+{
+  "origin": "https://workspace.example.com",
+  "updates": {
+    "origin": "https://releases.example.com",
+    "publicKey": "REPLACE_WITH_ED25519_PUBLIC_KEY_PEM"
+  }
+}

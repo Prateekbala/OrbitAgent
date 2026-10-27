@@ -1,0 +1,6 @@
+FROM node:24-bookworm-slim AS node
+FROM postgres:17.10-bookworm
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY scripts/operations/backup.mjs scripts/operations/restore.mjs scripts/operations/postgres.mjs /ops/
+USER postgres
+ENTRYPOINT ["node"]

@@ -1,0 +1,10 @@
+CREATE INDEX tool_action_dispatch ON tool_actions(workspace_id,state,created_at) WHERE state IN ('prepared','dispatched','outcome_unknown');
+CREATE INDEX tool_action_event_history ON tool_action_events(workspace_id,action_id,id DESC);
+CREATE INDEX knowledge_source_reverse_page ON knowledge_sources(workspace_id,source_page_id) WHERE source_page_id IS NOT NULL;
+CREATE INDEX knowledge_source_reverse_message ON knowledge_sources(workspace_id,source_message_id) WHERE source_message_id IS NOT NULL;
+CREATE INDEX knowledge_review_history ON knowledge_reviews(workspace_id,page_id,created_at DESC,id DESC);
+CREATE INDEX knowledge_review_current ON knowledge_reviews(workspace_id,page_id,page_version,review_epoch,reviewer_id,created_at DESC,id DESC);
+CREATE INDEX knowledge_provenance_history ON knowledge_provenance(workspace_id,page_id,id);
+CREATE INDEX knowledge_schedule_due ON knowledge_schedules(workspace_id,next_at) WHERE enabled;
+CREATE INDEX knowledge_freshness_due ON knowledge_metadata(workspace_id,fresh_until) WHERE state='active';
+CREATE INDEX knowledge_purge_due ON knowledge_metadata(workspace_id,deleted_at) WHERE state='deleted';

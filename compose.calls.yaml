@@ -1,0 +1,44 @@
+name: orbit-local-calls
+services:
+  call-redis:
+    image: redis:7.4.2-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    restart: unless-stopped
+    networks: [calls]
+    mem_limit: 128m
+    security_opt: ['no-new-privileges:true']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  livekit:
+    image: livekit/livekit-server:v1.13.9
+    command: ['--config', '/etc/livekit.yaml']
+    restart: unless-stopped
+    volumes: ['./infra/calls/livekit.yaml:/etc/livekit.yaml:ro']
+    ports:
+      - '127.0.0.1:7880:7880'
+      - '127.0.0.1:7881:7881'
+      - '127.0.0.1:7882:7882/udp'
+    networks: [calls]
+    depends_on:
+      call-redis: { condition: service_healthy }
+    mem_limit: 512m
+    security_opt: ['no-new-privileges:true']
+  call-egress:
+    image: livekit/egress:v1.14.1
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - './infra/calls/egress.yaml:/etc/egress.yaml:ro'
+      - './.data/call-recordings:/recordings'
+    networks: [calls]
+    depends_on:
+      call-redis: { condition: service_healthy }
+      livekit: { condition: service_started }
+    shm_size: 1gb
+    mem_limit: 4g
+    cpus: 4
+networks:
+  calls:

@@ -1,0 +1,9 @@
+api_key: orbit-local
+api_secret: local-development-only-do-not-use-in-production-32
+ws_url: ws://livekit:7880
+insecure: true
+redis:
+  address: call-redis:6379
+health_port: 7981
+logging:
+  level: warn

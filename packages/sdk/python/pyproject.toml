@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orbit-workspace-sdk"
+version = "1.0.0"
+requires-python = ">=3.11"
+description = "Orbit public API v1 client"
+
+[tool.setuptools.packages.find]
+include = ["orbit_sdk*"]

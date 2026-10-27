@@ -1,0 +1,63 @@
+name: Release candidate qualification
+on:
+  workflow_dispatch:
+    inputs:
+      scanner_image:
+        description: Approved Trivy image pinned by sha256 digest
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: release-qualification-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SCANNER_IMAGE: ${{ inputs.scanner_image }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@12.2.1
+      - name: Validate the operator-selected scanner
+        run: node -e "if(!/^.+@sha256:[a-f0-9]{64}$/.test(process.env.SCANNER_IMAGE))process.exit(1)"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run api:check
+      - run: npm run ops:test
+      - name: Dependency admission
+        run: npm audit --audit-level=high
+      - name: Disposable PostgreSQL encrypted restore and corruption test
+        run: npm run ops:restore-drill
+      - name: Synthetic baseline, not production capacity qualification
+        run: npm run ops:load > load-baseline.txt
+      - name: Scan source for leaked credentials
+        run: >-
+          docker run --rm -v "$PWD:/source:ro" "$SCANNER_IMAGE"
+          fs --scanners secret --exit-code 1
+          --skip-dirs /source/node_modules,/source/.data,/source/.git /source
+      - name: Build private local candidate images
+        run: |
+          docker build --target api -f deploy/Dockerfile -t orbit-api:candidate .
+          docker build --target web -f deploy/Dockerfile -t orbit-web:candidate .
+          docker save orbit-api:candidate -o api-image.tar
+          docker save orbit-web:candidate -o web-image.tar
+      - name: Verify non-root read-only startup without external provider access
+        run: node tests/operations/container-smoke.mjs orbit-api:candidate
+      - name: Scan all high and critical image findings
+        run: |
+          docker run --rm -v "$PWD:/images:ro" "$SCANNER_IMAGE" image --input /images/api-image.tar --severity HIGH,CRITICAL --exit-code 1
+          docker run --rm -v "$PWD:/images:ro" "$SCANNER_IMAGE" image --input /images/web-image.tar --severity HIGH,CRITICAL --exit-code 1
+      - name: Preserve baseline evidence without publishing images
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-local-baseline
+          path: load-baseline.txt
+          retention-days: 7

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/**/*.{ts,mjs}",
+        "tests/runtime/**/*.ts",
+        "tests/operations/*.{ts,mjs}",
+        "examples/**/*.ts",
+        "!scripts/operations/postgres.mjs"
+      ],
+      "project": ["*.ts", "scripts/**/*.{ts,mjs}", "tests/**/*.{ts,mjs}", "examples/**/*.ts"]
+    },
+    "apps/api": {
+      "entry": ["src/model-broker/server.ts", "src/governance/erasure-server.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "apps/web": {
+      "entry": ["public/orbit-sw.js"],
+      "project": [
+        "app/**/*.{ts,tsx}",
+        "components/**/*.{ts,tsx}",
+        "lib/**/*.ts",
+        "*.ts",
+        "public/*.js",
+        "app/**/*.css",
+        "components/**/*.css"
+      ]
+    },
+    "apps/managed-agents": {
+      "project": ["agent/**/*.ts"]
+    },
+    "apps/desktop": {
+      "entry": ["test/**/*.test.ts", "scripts/*.mjs"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/*.mjs"]
+    },
+    "apps/mobile": {},
+    "packages/*": {}
+  },
+  "ignoreIssues": {
+    "tests/operations/expo-security.test.mjs": ["unlisted"]
+  }
+}

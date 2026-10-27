@@ -1,0 +1,41 @@
+{
+  "name": "@ao/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./messaging": "./src/messaging.ts",
+    "./conversations": "./src/conversations.ts",
+    "./files": "./src/files.ts",
+    "./notifications": "./src/notifications.ts",
+    "./activity": "./src/activity.ts",
+    "./content": "./src/content.ts",
+    "./tasks": "./src/tasks.ts",
+    "./scheduling": "./src/scheduling.ts",
+    "./task-actions": "./src/task-actions.ts",
+    "./projects": "./src/projects.ts",
+    "./identity": "./src/identity.ts",
+    "./personal": "./src/personal.ts",
+    "./workflows": "./src/workflows.ts",
+    "./agents": "./src/agents.ts",
+    "./tools": "./src/tools.ts",
+    "./knowledge": "./src/knowledge.ts",
+    "./retrieval": "./src/retrieval.ts",
+    "./connections": "./src/connections.ts",
+    "./automations": "./src/automations.ts",
+    "./developer": "./src/developer.ts",
+    "./interoperability": "./src/interoperability.ts",
+    "./calls": "./src/calls.ts",
+    "./delivery": "./src/delivery.ts",
+    "./file-governance": "./src/file-governance.ts",
+    "./billing": "./src/billing.ts",
+    "./governance": "./src/governance.ts"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

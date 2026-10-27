@@ -1,0 +1,22 @@
+{
+  "name": "@ao/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "npm run build && electron .",
+    "test": "node --import tsx --test test/*.test.ts",
+    "package": "npm run build && electron-builder --dir",
+    "release": "node scripts/release.mjs"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  }
+}

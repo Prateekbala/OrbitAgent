@@ -1,0 +1,22 @@
+appId: so.orbit.desktop
+productName: Orbit
+asar: true
+files:
+  - dist/**/*
+  - package.json
+extraResources:
+  - from: client.json
+    to: client.json
+mac:
+  hardenedRuntime: true
+  gatekeeperAssess: true
+  target: [dmg, zip]
+win:
+  target: nsis
+  publisherName: ${env.ORBIT_WINDOWS_PUBLISHER}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+linux:
+  target: AppImage

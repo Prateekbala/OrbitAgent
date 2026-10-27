@@ -1,0 +1,63 @@
+services:
+  api:
+    environment:
+      BYOK_WRAPPING_PUBLIC_KEY_FILE: /run/secrets/model_wrapping_public
+      MODEL_BROKER_URL: https://model-broker:4010
+    secrets: [model_wrapping_public]
+  worker:
+    environment:
+      BYOK_WRAPPING_PUBLIC_KEY_FILE: /run/secrets/model_wrapping_public
+      BYOK_CAPABILITY_SIGNING_KEY_FILE: /run/secrets/model_capability_signing
+      MODEL_BROKER_URL: https://model-broker:4010
+      NODE_EXTRA_CA_CERTS: /run/secrets/model_broker_ca
+    secrets: [model_wrapping_public, model_capability_signing, model_broker_ca]
+  model-broker:
+    image: ${API_IMAGE:?Use a scanned immutable API image}
+    command: [node, scripts/operations/entrypoint.mjs, apps/api/src/model-broker/server.ts]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    environment:
+      MODEL_BROKER_DATABASE_URL_FILE: /run/secrets/model_broker_database
+      BYOK_CAPABILITY_VERIFY_KEY_FILE: /run/secrets/model_capability_verify
+      BYOK_WRAPPING_PRIVATE_KEY_FILES: '["/run/secrets/model_wrapping_private"]'
+      MODEL_BROKER_TLS_KEY_FILE: /run/secrets/model_broker_tls_key
+      MODEL_BROKER_TLS_CERT_FILE: /run/secrets/model_broker_tls_cert
+      MODEL_BROKER_HOST: 0.0.0.0
+    secrets:
+      [
+        model_broker_database,
+        model_capability_verify,
+        model_wrapping_private,
+        model_broker_tls_key,
+        model_broker_tls_cert,
+      ]
+    networks: [private]
+  organization-erasure:
+    image: ${API_IMAGE:?Use a scanned immutable API image}
+    command: [node, scripts/operations/entrypoint.mjs, apps/api/src/governance/erasure-server.ts]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    environment:
+      ERASURE_DATABASE_URL_FILE: /run/secrets/erasure_database
+      FILE_STORAGE_PROVIDER: s3
+      S3_BUCKET: ${S3_BUCKET:?Set the private bucket}
+      S3_REGION: ${S3_REGION:?Set the storage region}
+      CLAMAV_HOST: scanner
+    secrets: [erasure_database]
+    networks: [private]
+secrets:
+  model_wrapping_public: { file: ../secrets/model-wrapping-public.pem }
+  model_wrapping_private: { file: ../secrets/model-wrapping-private.pem }
+  model_capability_signing: { file: ../secrets/model-capability-signing.pem }
+  model_capability_verify: { file: ../secrets/model-capability-verify.pem }
+  model_broker_ca: { file: ../secrets/model-broker-ca.pem }
+  model_broker_database: { file: ../secrets/model-broker-database-url }
+  erasure_database: { file: ../secrets/erasure-database-url }
+  model_broker_tls_key: { file: ../secrets/model-broker-tls-key.pem }
+  model_broker_tls_cert: { file: ../secrets/model-broker-tls-cert.pem }

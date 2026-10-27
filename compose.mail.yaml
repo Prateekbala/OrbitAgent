@@ -1,0 +1,16 @@
+name: orbit-local-mail
+services:
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 500
+      MP_ENABLE_VERSION_CHECK: 'false'
+    volumes:
+      - mailpit_data:/data
+volumes:
+  mailpit_data:

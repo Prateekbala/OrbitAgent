@@ -1,0 +1,5 @@
+CREATE OR REPLACE FUNCTION automation_occurrence_allowed(tenant uuid,occurrence uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $body$
+ SELECT occurrence IS NULL OR (tenant=nullif(current_setting('ao.workspace_id',true),'')::uuid AND EXISTS(
+ SELECT 1 FROM public.automation_occurrences o JOIN public.automations a ON a.workspace_id=o.workspace_id AND a.id=o.automation_id
+ WHERE o.workspace_id=tenant AND o.id=occurrence AND o.revision=a.revision AND a.status='active' AND o.status IN ('queued','running','outcome_unknown') AND o.created_by=a.owner_id AND (o.deadline_at IS NULL OR o.deadline_at>clock_timestamp()) AND NOT EXISTS(SELECT 1 FROM public.automation_versions v CROSS JOIN LATERAL jsonb_each_text(coalesce(v.authority_snapshot->'agentRevisions','{}'::jsonb)) pin WHERE v.workspace_id=o.workspace_id AND v.automation_id=o.automation_id AND v.revision=o.revision AND NOT EXISTS(SELECT 1 FROM public.agents agent WHERE agent.workspace_id=tenant AND agent.id=pin.key::uuid AND agent.revision=pin.value::integer AND agent.status='active'))))
+$body$;

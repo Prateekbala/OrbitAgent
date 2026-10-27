@@ -1,0 +1,28 @@
+export function sqliteProgram(sql: string) {
+  return [
+    'import sqlite3,json,base64,time',
+    `source=base64.b64decode('${Buffer.from(sql).toString('base64')}').decode('utf-8')`,
+    "connection=sqlite3.connect(':memory:')",
+    'connection.enable_load_extension(False)',
+    'connection.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, 1000000)',
+    'connection.setlimit(sqlite3.SQLITE_LIMIT_SQL_LENGTH, 20000)',
+    'connection.setlimit(sqlite3.SQLITE_LIMIT_EXPR_DEPTH, 50)',
+    'denied={sqlite3.SQLITE_ATTACH,sqlite3.SQLITE_DETACH,sqlite3.SQLITE_PRAGMA}',
+    'connection.set_authorizer(lambda action,a,b,database,trigger: sqlite3.SQLITE_DENY if action in denied else sqlite3.SQLITE_OK)',
+    'started=time.monotonic()',
+    'connection.set_progress_handler(lambda: 1 if time.monotonic()-started>25 else 0, 10000)',
+    'def execute(statement):',
+    ' cursor=connection.execute(statement)',
+    ' if cursor.description:',
+    '  rows=cursor.fetchmany(101)',
+    "  print(json.dumps({'columns':[column[0] for column in cursor.description],'rows':rows[:100],'truncated':len(rows)>100},default=str))",
+    "statement=''",
+    'for character in source:',
+    ' statement+=character',
+    " if character==';' and sqlite3.complete_statement(statement):",
+    '  execute(statement)',
+    "  statement=''",
+    'if statement.strip(): execute(statement)',
+    'connection.commit()',
+  ].join('\n');
+}

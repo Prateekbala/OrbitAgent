@@ -1,0 +1,26 @@
+{
+ email {$ACME_EMAIL}
+ admin off
+}
+{$PUBLIC_HOST} {
+ encode zstd gzip
+ header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+ @internal path /internal/* /api/internal/*
+ respond @internal 404
+ handle /health {
+  reverse_proxy api:4000
+ }
+ handle /api/* {
+  uri strip_prefix /api
+  reverse_proxy api:4000 {
+   flush_interval -1
+   header_up X-Forwarded-For {remote_host}
+  }
+ }
+ handle /.well-known/* {
+  reverse_proxy api:4000
+ }
+ handle {
+  reverse_proxy web:3000
+ }
+}

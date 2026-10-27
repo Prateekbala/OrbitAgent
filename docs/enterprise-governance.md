@@ -1,0 +1,51 @@
+# Enterprise governance and lifecycle
+
+The organization-wide erasure and isolated OpenAI BYOK implementation in migrations 075–076 supersedes the earlier boundaries below. See [organization erasure and BYOK](organization-erasure-byok.md) for the current protocol, explicit retained records and operational evidence requirements. Account-level erasure, additional model providers and live infrastructure/independent qualification remain separate work.
+
+Implemented in migrations 072–076. This is a locally verified increment, not completion of every R19/R20 release gate. No production account, domain, provider credential, certificate, compliance certification or independent assessment was created.
+
+## Administration
+
+Organization settings contain **Enterprise governance & operations**. Owners publish optimistic-versioned policy revisions. Administrators can inspect policy and operational metadata; only owners may change policy, approve diagnostic support access, release legal holds, or request erasure. Every action rechecks the account session and current organization requirements (MFA, SSO, domain and session age).
+
+Policies govern hosted execution, model identifiers, agent creation, tool identifiers, connection providers, recipient sharing links, cross-organization invitations, recording modes, exports, support diagnostics, retention, backup lifetime and opt-in aggregate activity. Empty allowlists preserve configured platform defaults. Changing policy increments the organization authorization version; existing source grants must revalidate.
+
+Database admission triggers protect queued/running runs, proposed/executing tools, connected credentials, active calls, sharing links and cross-organization grants. Both organizations' external-sharing policies apply to new cross-organization grants. Tool authorization and connector credential loading recheck current policy before use. Workspace and shared-channel exports recheck export policy while streaming.
+
+**BYOK and residency boundaries:** the isolated OpenAI broker now provides customer-key execution independently of the Eve operator-key runtime. Required-BYOK admits only an active allowed key/model binding; unavailable, expired or revoked bindings fail closed. Private wrapping keys belong only to the broker, and transport-signing keys belong only to the execution worker. Other model providers and live acceptance remain pending. Live voice-agent participation remains unavailable in the media provider. Attested egress still requires an unexpired operator evidence record for a permitted region; this is not proof of geographic packet confinement. Database, backup, telemetry, calendar, webhook, scanner, email, media and model flows still need deployment-level regional qualification. See the current protocol linked above.
+
+Policy restrictions stop future admissions and authorized use; they cannot recall a provider request already sent. Fleet-wide in-flight cancellation, credential-proxy separation, and complete coverage of every outbound adapter remain release work.
+
+## Audit and support
+
+`GET /v1/organizations/:org/governance/audit` searches action names with a workspace filter and sequence pagination. The NDJSON export fixes an upper sequence boundary and rechecks administrator access between pages. Private resource identifiers are withheld when the exporter lacks current source access; action metadata remains available to authorized organization administrators.
+
+Existing workspace and organization journal records are backfilled into one organization sequence. Every new event hashes canonical JSONB, links the previous hash, and atomically advances a locked head. Application roles cannot rewrite audit records. `/audit/verify` recomputes payload and chain hashes. This detects corruption relative to the current database head; a privileged database operator could rewrite both history and head. Use `scripts/operations/audit-anchor.ts <organization-id> <new-output-file>` with `OPERATOR_DATABASE_URL` and an independent Ed25519 `AUDIT_SIGNING_KEY_FILE`, then publish the signed head to an independently administered append-only store. Independent sink operation, anchor comparison, audit retention schedules and event-completeness assessment remain pending. Audit export is metadata with content hashes, not a raw private-event payload export.
+
+Support grants record the verified recipient account, approving owner, workspaces, ticket, purpose and a 5–120 minute lifetime. Diagnostics require the recipient's MFA session, a currently active approving owner, enabled support policy and an unrevoked/unexpired grant. Reads are audited and expose aggregate run/tool counts only. There is no impersonation session or implicit access to private conversations, prompts or credentials.
+
+## Preservation and erasure
+
+Legal holds cover a workspace or conversation. Held message/task/page/transcript/call/file content is protected from destructive changes; task and knowledge child records are also guarded. A new file hold is refused when a physical purge is already in flight. A hold preserves existing retained data; it cannot recover bytes already deleted. The existing page-level preservation setting also blocks governed page erasure.
+
+Owner-requested source erasure and scheduled organization retention create tenant-scoped, restartable `lifecycle_jobs`. Processing uses bounded batches, expiring fenced leases, retries and terminal dead letters. The lifecycle reports `held`, `waiting_storage`, `waiting_receipts`, `completed` or `dead`; logical source redaction never immediately claims physical deletion. Current scope is individual messages, tasks, knowledge pages, files and retained transcripts. Scheduled task retention applies to completed/cancelled tasks. This per-source endpoint does not perform organization erasure; use the separate organization erasure protocol linked above.
+
+Erasure redacts the supported canonical source, related task comments/criteria/artifacts or knowledge publications/comments/CRDT state, retrieval chunks/documents, file extractions and directly referenced memories/revisions. Retrieval contexts are invalidated. File binaries use the existing cleanup worker and must report `purged_at`. Source changes also invalidate reusable authorization and derived-context epochs. Transitive copies, immutable run checkpoints/traces, derived knowledge, media, notification payloads, exported archives and independently retained provider/runtime data require separate handling; these are not silently counted as erased.
+
+Every job additionally waits for signed operator evidence for **backup, runtime, provider and derived** components, including reviewed non-applicability where a component has no copy. The backup receipt must postdate the configured backup-expiry boundary. `ingest-deletion-receipt.ts` verifies exact Ed25519-signed bytes, rejects changed evidence and conflicting replays, and wakes the job. There is no customer-facing endpoint to self-acknowledge deletion. An authorized component operator must inspect the actual systems and sign evidence; a signature alone does not establish that all copies were found. Connect these receipts to separately administered service identities and deletion inventories before production use.
+
+Do not shorten existing backup commitments by editing a policy: jobs retain their own expiry boundary. `backup_inventory` is an operator-only schema foundation; remote object-lock expiry, scheduled inventory reconciliation and deletion-journal replay after restores remain pending. Restored databases must stay quarantined until post-backup erasure requests have been replayed and checked against the current journal.
+
+## Exports and secrets
+
+`GET /v1/organizations/:org/export` streams a readable tar containing organization metadata and currently exportable workspace archives. An organization administrator must also be a full administrator of each included workspace. Current private conversation membership, shared export restrictions, file access and page publication governance still apply. The final manifest lists excluded workspaces and content categories. An incomplete stream is not a valid export. Delivery uses the current authenticated session, so no persistent anonymous export artifact is created. Explicit time-limited stored export grants and provider export acknowledgements remain pending.
+
+Identity envelope v2 binds key ID and context through AES-GCM authenticated data, reads retained v1/v2 keys, and writes only the active key. `rotate-secrets.ts` inventories fixed credential stores, validates decryption without printing values, and rewraps bounded locked batches with `--apply`. Prior keys remain decrypt-only during rollout. It deliberately never approves retiring a key: in-flight OAuth/capabilities, separate email encryption, backups and all old replicas must be resolved first. Operator/migration keys must never be placed in the API container.
+
+API and worker entry points now support `PROCESS_ROLE=api|worker|all`. Production configuration separates the processes and their database login files. The current application still requires the four trusted scoped database roles, and API/worker credentials remain broader than a fully separated identity and credential-proxy deployment. This is process separation, not a claim of complete least-privilege service isolation.
+
+## Verification and remaining release work
+
+Tests cover optimistic policy conflicts, tenant denial, direct admission restrictions, legal preservation, support MFA/revocation, audit immutability/integrity, export policy, source erasure, signed receipts, multi-replica rate limits and key rewrapping. Chromium exercises policy editing, audit search/integrity, reasoned legal-hold release and public incident rendering with axe checks. PostgreSQL 17 runs the governance, operations and platform suites inside the recovery drill.
+
+See [production runbook](production-operations.md), [security evidence](security/assessment.md), and [legal drafting pack](legal/README.md). Account-level erasure, exhaustive outbound policy coverage, broader BYOK provider coverage, independently operated audit/receipt stores, remote backup expiry, granular credential-service separation and external assessments remain open work.

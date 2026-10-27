@@ -1,0 +1,15 @@
+ALTER TABLE conversations ADD COLUMN kind text NOT NULL DEFAULT 'channel' CHECK(kind IN ('channel','direct','group'));
+ALTER TABLE conversations ADD COLUMN title text CHECK(length(title) BETWEEN 1 AND 100);
+ALTER TABLE conversations ADD COLUMN version integer NOT NULL DEFAULT 1 CHECK(version>0);
+ALTER TABLE conversations ADD COLUMN direct_low uuid;
+ALTER TABLE conversations ADD COLUMN direct_high uuid;
+ALTER TABLE conversations ADD CONSTRAINT conversation_pair CHECK((kind='direct' AND direct_low IS NOT NULL AND direct_high IS NOT NULL AND direct_low<direct_high) OR (kind<>'direct' AND direct_low IS NULL AND direct_high IS NULL));
+ALTER TABLE conversations ADD CONSTRAINT conversation_privacy CHECK(kind='channel' OR visibility='private');
+ALTER TABLE conversations ADD CONSTRAINT conversation_title CHECK(kind<>'group' OR title IS NOT NULL);
+ALTER TABLE conversations ADD CONSTRAINT direct_low_member FOREIGN KEY(workspace_id,direct_low) REFERENCES memberships(workspace_id,id);
+ALTER TABLE conversations ADD CONSTRAINT direct_high_member FOREIGN KEY(workspace_id,direct_high) REFERENCES memberships(workspace_id,id);
+CREATE UNIQUE INDEX direct_pair ON conversations(workspace_id,direct_low,direct_high) WHERE kind='direct';
+ALTER TABLE conversation_members ADD COLUMN role text NOT NULL DEFAULT 'member' CHECK(role IN ('owner','member'));
+ALTER TABLE conversation_members ADD COLUMN joined_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE outbox_events ADD COLUMN audience_membership_id uuid;
+ALTER TABLE outbox_events ADD CONSTRAINT outbox_audience FOREIGN KEY(workspace_id,audience_membership_id) REFERENCES memberships(workspace_id,id);

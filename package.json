@@ -1,0 +1,70 @@
+{
+  "name": "agent-orchestration",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "undici@8.10.2": "8.12.2",
+    "@expo/cli": {
+      "zod": "4.6.7"
+    }
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web 'npm run dev -w @ao/api' 'npm run dev -w @ao/web'",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc --project tsconfig.tests.json",
+    "test": "npm run test -w @ao/api",
+    "check": "npm run lint:unused && npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .github apps packages tests scripts examples *.json *.ts",
+    "format:check": "prettier --check .github apps packages tests scripts examples *.json *.ts",
+    "test:e2e": "playwright test",
+    "runtime:build": "npm run runtime:build -w @ao/managed-agents",
+    "runtime:start": "npm run runtime:start -w @ao/managed-agents",
+    "test:runtime": "node --env-file-if-exists=.env --import tsx tests/runtime/smoke.ts",
+    "db:migrate": "npm run db:migrate -w @ao/api",
+    "email:verify": "npm run email:verify -w @ao/api",
+    "email:dev": "docker compose -f compose.mail.yaml up -d",
+    "email:stop": "docker compose -f compose.mail.yaml stop",
+    "test:email:local": "node --import tsx tests/runtime/local-email.ts",
+    "search:evaluate": "node --import tsx scripts/retrieval-evaluate.ts",
+    "api:generate": "node --import tsx scripts/generate-public-api.ts",
+    "api:check": "node --import tsx scripts/generate-public-api.ts --check",
+    "test:sdk:python": "PYTHONPATH=packages/sdk/python python3 -m unittest discover -s packages/sdk/python/tests",
+    "local:up": "node scripts/local.mjs up",
+    "local:down": "node scripts/local.mjs down",
+    "local:status": "node scripts/local.mjs status",
+    "local:verify": "node scripts/local.mjs verify",
+    "ops:preflight": "node scripts/operations/release-preflight.mjs",
+    "ops:load": "node --import tsx scripts/operations/load-smoke.ts",
+    "ops:restore-drill": "node --import tsx tests/operations/restore-drill.ts",
+    "ops:test": "node --test tests/operations/*.test.mjs",
+    "lint:unused": "knip --treat-config-hints-as-errors"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.2.1",
+    "electron": "^45.0.0",
+    "eve": "0.83.0",
+    "fastify": "5.12.7",
+    "knip": "^6.43.0",
+    "openapi-typescript": "^7.13.0",
+    "otplib": "^13.5.0",
+    "prettier": "^3.9.10",
+    "sharp": "^0.35.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "web-push": "^3.6.7",
+    "zod": "^4.3.6"
+  },
+  "packageManager": "npm@12.2.1"
+}

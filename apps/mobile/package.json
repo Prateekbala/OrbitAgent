@@ -1,0 +1,23 @@
+{
+  "name": "@ao/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/verify-config.mjs"
+  },
+  "dependencies": {
+    "expo": "^58.0.19",
+    "expo-status-bar": "^58.0.4",
+    "react": "^19.3.0",
+    "react-native": "^0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-webview": "^14.0.1",
+    "expo-constants": "~58.0.13",
+    "expo-system-ui": "~58.0.6"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+.next
+.data
+package-lock.json
+readme.md
+architecture.md
+
+apps/web/next-env.d.ts

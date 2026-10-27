@@ -1,0 +1,125 @@
+name: orbit-production
+services:
+  edge:
+    image: ${EDGE_IMAGE:?Use a verified Caddy image digest}
+    restart: unless-stopped
+    ports: ['80:80', '443:443', '443:443/udp']
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Set an owned hostname}
+      ACME_EMAIL: ${ACME_EMAIL:?Set the certificate contact}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - edge-data:/data
+      - edge-config:/config
+    networks:
+      edge:
+        ipv4_address: 10.80.0.2
+  web:
+    image: ${WEB_IMAGE:?Use a verified web image digest}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp', '/app/apps/web/.next/cache:uid=1000,gid=1000']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    networks: [edge]
+  api: &application
+    image: ${API_IMAGE:?Use a verified API image digest}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp', '/app/.data/uploads:uid=1000,gid=1000,mode=0700']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    stop_grace_period: 10m
+    environment: &configuration
+      PROCESS_ROLE: api
+      API_HOST: 0.0.0.0
+      WEB_ORIGIN: https://${PUBLIC_HOST}
+      DEPLOYMENT_REGION: ${DEPLOYMENT_REGION:?Choose the qualified deployment region}
+      TRUSTED_PROXY_CIDRS: 10.80.0.2/32
+      DATABASE_URL_FILE: /run/secrets/api_database
+      IDENTITY_ENCRYPTION_KEY_FILE: /run/secrets/identity_key
+      EMAIL_ENCRYPTION_KEY_FILE: /run/secrets/email_key
+      REALTIME_CURSOR_KEY_FILE: /run/secrets/cursor_key
+      OPERATIONS_METRICS_TOKEN_FILE: /run/secrets/metrics_token
+      RESEND_API_KEY_FILE: /run/secrets/email_provider_key
+      EMAIL_PROVIDER: resend
+      EMAIL_FROM: ${EMAIL_FROM:?Set a verified sender}
+      FILE_STORAGE_PROVIDER: s3
+      S3_BUCKET: ${S3_BUCKET:?Set a private bucket}
+      S3_REGION: ${S3_REGION:?Set the qualified storage region}
+      CLAMAV_HOST: scanner
+      EVE_RUNTIME_URL: ${EVE_RUNTIME_URL:?Set the qualified runtime endpoint}
+      EVE_SERVICE_TOKEN_FILE: /run/secrets/runtime_token
+    secrets:
+      [
+        api_database,
+        identity_key,
+        email_key,
+        cursor_key,
+        metrics_token,
+        email_provider_key,
+        runtime_token,
+      ]
+    networks: [edge, private]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+  worker:
+    <<: *application
+    environment:
+      <<: *configuration
+      PROCESS_ROLE: worker
+      DATABASE_URL_FILE: /run/secrets/worker_database
+    secrets:
+      [
+        worker_database,
+        identity_key,
+        email_key,
+        cursor_key,
+        metrics_token,
+        email_provider_key,
+        runtime_token,
+      ]
+    networks: [private]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const f=require('fs');process.exit(Date.now()-f.statSync('/tmp/orbit-worker-heartbeat').mtimeMs<45000?0:1)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+  scanner:
+    image: ${SCANNER_IMAGE:?Use a verified ClamAV image digest}
+    restart: unless-stopped
+    networks: [private]
+    volumes: [scanner-signatures:/var/lib/clamav]
+networks:
+  edge:
+    ipam:
+      config: [{ subnet: 10.80.0.0/24 }]
+  private: {}
+volumes:
+  edge-data: {}
+  edge-config: {}
+  scanner-signatures: {}
+secrets:
+  api_database: { file: ../secrets/api-database-url }
+  worker_database: { file: ../secrets/worker-database-url }
+  identity_key: { file: ../secrets/identity-key }
+  email_key: { file: ../secrets/email-key }
+  cursor_key: { file: ../secrets/cursor-key }
+  metrics_token: { file: ../secrets/metrics-token }
+  email_provider_key: { file: ../secrets/email-provider-key }
+  runtime_token: { file: ../secrets/runtime-token }

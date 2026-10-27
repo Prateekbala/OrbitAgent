@@ -1,0 +1,247 @@
+@font-face {
+  font-family: 'Orbit Landing Sans';
+  src: url('/landing/inter-tight-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Orbit Reference Serif';
+  src: url('/landing/reference-serif.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --font: 'Orbit Landing Sans', Arial, sans-serif;
+  --background: #ffffff;
+  --foreground: #20241f;
+  --card: #ffffff;
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --primary: #263e30;
+  --primary-hover: #344d36;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f3e9;
+  --secondary-foreground: #405538;
+  --muted: #f0f2ed;
+  --muted-foreground: #6b7068;
+  --accent: #e8edde;
+  --accent-foreground: #344b31;
+  --border: #dde1d7;
+  --input: #d5ddcf;
+  --ring: #657f55;
+  --surface: #f7f8f4;
+  --raised: #ffffff;
+  --hover: #eef2e8;
+  --sidebar: #f7f8f4;
+  --sidebar-foreground: #4b5848;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #e6edde;
+  --sidebar-accent-foreground: #344b31;
+  --sidebar-border: #dde1d7;
+  --sidebar-ring: var(--ring);
+  --rail: #202b23;
+  --chrome: #202b23;
+  --chrome-foreground: #f1f4eb;
+  --chrome-accent: #dfe8d3;
+  --accent-strong: #43613b;
+  --accent-line: #d4dec9;
+  --brand-coral: #fc4718;
+  --brand-highlight: #dfe8d3;
+  --chart-1: #657f55;
+}
+:root.dark {
+  --background: #141414;
+  --foreground: #ededed;
+  --card: #191919;
+  --card-foreground: var(--foreground);
+  --popover: #1c1c1c;
+  --popover-foreground: var(--foreground);
+  --primary: #86dba2;
+  --primary-hover: #a1e7b8;
+  --primary-foreground: #102116;
+  --secondary: #1e1e1e;
+  --secondary-foreground: #e3e3e3;
+  --muted: #242424;
+  --muted-foreground: #a6a6a6;
+  --accent: #183021;
+  --accent-foreground: #b3eec5;
+  --border: #303030;
+  --input: #414141;
+  --ring: #86dba2;
+  --sidebar: #101010;
+  --sidebar-foreground: #b8b8b8;
+  --sidebar-accent: #183021;
+  --sidebar-accent-foreground: #b3eec5;
+  --sidebar-border: #2c2c2c;
+  --surface: #1c1c1c;
+  --raised: #242424;
+  --hover: #252525;
+  --rail: #090909;
+  --chrome: #090909;
+  --chrome-foreground: #ededed;
+  --chrome-accent: #b8b8b8;
+  --accent-strong: #9de5b4;
+  --accent-line: #385342;
+  --brand-coral: var(--primary);
+  --brand-highlight: var(--primary);
+}
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+body {
+  font-weight: 500;
+}
+.rail .rail-shortcut.selected svg,
+.orbit-mark {
+  color: var(--chrome-accent);
+}
+.rail .rail-shortcut.selected {
+  background: #ffffff16;
+  color: var(--chrome-accent);
+}
+.rail .rail-active {
+  background: var(--chrome-accent);
+  outline-color: #dfe8d34d;
+}
+.rail .rail-active span {
+  color: #222d1d;
+}
+.dark .rail .rail-active {
+  background: var(--primary);
+  outline-color: #86dba24d;
+}
+.dark .rail .rail-active span {
+  color: var(--primary-foreground);
+}
+.dark .rail .rail-shortcut.selected {
+  background: var(--sidebar-accent);
+  color: var(--primary);
+}
+.dark .rail .rail-shortcut.selected svg {
+  color: var(--primary);
+}
+.rail .appearance-trigger:hover {
+  color: var(--chrome-accent);
+}
+.sidebar-search:focus-within {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 15%, transparent);
+}
+.main-nav button,
+.channel-nav button {
+  font-size: 14px;
+}
+.content-header h1 {
+  letter-spacing: -0.025em;
+}
+.workspace .message-body {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.workspace-welcome {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 20px 0;
+  padding: 15px 18px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand-coral);
+  border-radius: 8px;
+  background: var(--secondary);
+  flex-shrink: 0;
+}
+.workspace-welcome > div {
+  flex: 1;
+  min-width: 0;
+}
+.workspace-welcome h2 {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.workspace-welcome p {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  margin-top: 3px;
+}
+.workspace-welcome > svg {
+  color: var(--accent-strong);
+  flex-shrink: 0;
+}
+.workspace-welcome progress {
+  accent-color: var(--primary);
+  width: 80px;
+  height: 5px;
+  display: block;
+  margin-top: 8px;
+}
+.guide-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 6px;
+}
+.guide-step > label {
+  margin: 0;
+  flex-direction: row;
+  align-items: center;
+  font-size: 14px;
+}
+.workspace-picker-list {
+  display: grid;
+  gap: 8px;
+  margin-block: 18px;
+  max-height: 45svh;
+  overflow-y: auto;
+}
+.workspace-picker-list > button {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 14px;
+  height: auto;
+  white-space: normal;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.workspace-picker-list > button[aria-current] {
+  border-color: var(--ring);
+  background: var(--secondary);
+}
+.workspace-picker-list strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+}
+.workspace-picker-list small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-top: 3px;
+}
+.workspace-picker-list > button > svg:last-child {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .workspace-welcome {
+    margin: 10px 12px 0;
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .workspace-welcome > svg {
+    display: none;
+  }
+  .workspace-welcome > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .workspace-welcome progress {
+    display: none;
+  }
+}

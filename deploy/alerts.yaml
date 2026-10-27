@@ -1,0 +1,15 @@
+groups:
+  - name: orbit-api
+    rules:
+      - alert: OrbitApiErrors
+        expr: sum(rate(orbit_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(orbit_http_requests_total[5m])), 1) > 0.02
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: API errors exceed the initial service objective
+          runbook: docs/production-operations.md
+      - alert: OrbitTelemetryLoss
+        expr: increase(orbit_metric_drops_total[5m]) > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: Request metrics were dropped; inspect database health }
