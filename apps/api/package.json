@@ -15,6 +15,7 @@
     "@ai-sdk/openai-compatible": "^3.0.78",
     "@ao/contracts": "*",
     "@ao/database": "*",
+    "@ao/models": "*",
     "@aws-sdk/client-s3": "^3.1156.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/helmet": "^13.0.2",
@@ -23,6 +24,7 @@
     "@modelcontextprotocol/client": "^2.4.0",
     "@modelcontextprotocol/server": "^2.4.0",
     "@node-saml/node-saml": "^5.1.0",
+    "@vercel/functions": "^3.10.4",
     "@vercel/sandbox": "3.6.1",
     "ai": "^7.0.150",
     "cron-parser": "^5.10.2",
@@ -48,5 +50,8 @@
     "jose": "^6.2.13",
     "vitest": "^4.0.0",
     "xml-crypto": "^6.4.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

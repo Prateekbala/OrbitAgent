@@ -1,3 +1,5 @@
+import { attachDatabasePool } from '@vercel/functions';
+import { defaultAgentModel, defaultAgentPricing } from '@ao/models/configuration';
 import { RoutedRuntime } from './governance/byok-runtime.js';
 import { LifecycleWorker } from './governance/lifecycle.js';
 import { dockerSandboxExecutor } from './tools/docker-sandbox.js';
@@ -37,7 +39,13 @@ import { ActivityCleanupWorker } from './activity/worker.js';
 import { IdentityCleanupWorker } from './identity/worker.js';
 import { configuredFiles } from './files/config.js';
 import { FileCleanupWorker } from './files/worker.js';
-import { database, migrate, assertRuntimeConnection, scopedDatabase } from '@ao/database';
+import {
+  database,
+  migrate,
+  assertRuntimeConnection,
+  scopedDatabase,
+  decodeDatabaseCertificate,
+} from '@ao/database';
 import { resolve } from 'node:path';
 import { writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -54,10 +62,19 @@ if (production && !process.env.DATABASE_URL)
   throw new Error('DATABASE_URL is required in production.');
 if (production && !process.env.WEB_ORIGIN?.startsWith('https://'))
   throw new Error('An HTTPS WEB_ORIGIN is required in production.');
-const db = await database(
+const connection = await database(
   process.env.DATABASE_URL
     ? {
         url: process.env.DATABASE_URL,
+        ...(process.env.VERCEL === '1' && process.env.PROCESS_ROLE === 'api'
+          ? { onPoolCreated: attachDatabasePool }
+          : {}),
+        ...(process.env.DATABASE_POOL_MAX
+          ? { maxConnections: Number(process.env.DATABASE_POOL_MAX) }
+          : {}),
+        ...(process.env.DATABASE_CA_CERT_BASE64
+          ? { caCertificate: decodeDatabaseCertificate(process.env.DATABASE_CA_CERT_BASE64) }
+          : {}),
         onPoolError: (code) =>
           process.stderr.write(
             JSON.stringify({ level: 'error', code, message: 'Idle database connection failed' }) +
@@ -68,13 +85,30 @@ const db = await database(
         directory: resolve(fileURLToPath(new URL('../../../', import.meta.url)), '.data/postgres'),
       },
 );
-if (production) await assertRuntimeConnection(db);
-else await migrate(db);
+if (production) {
+  await assertRuntimeConnection(connection, {
+    sharedLogin: process.env.DATABASE_CONNECTION_MODE === 'shared',
+  });
+  if (process.env.DATABASE_CONNECTION_MODE === 'shared')
+    process.stderr.write(
+      JSON.stringify({
+        level: 'warn',
+        code: 'SHARED_DATABASE_LOGIN',
+        message:
+          'API, worker and migrations share database authority. Queries remain role-scoped; credential isolation is reduced.',
+      }) + '\n',
+    );
+} else await migrate(connection);
+const db = scopedDatabase(connection);
 const platformRuntime = new EveRuntime(process.env.EVE_RUNTIME_URL, process.env.EVE_SERVICE_TOKEN, {
   durabilityQualified: process.env.EVE_DURABILITY_QUALIFIED === 'true',
-  pricing: parseModelPricing(process.env.AGENT_MODEL_PRICING_JSON),
-  ...(process.env.AGENT_MODEL ? { defaultModel: process.env.AGENT_MODEL } : {}),
-  models: (process.env.AGENT_APPROVED_MODELS?.trim() || process.env.AGENT_MODEL || '')
+  pricing: parseModelPricing(process.env.AGENT_MODEL_PRICING_JSON ?? defaultAgentPricing),
+  defaultModel: process.env.AGENT_MODEL ?? defaultAgentModel,
+  models: (
+    process.env.AGENT_APPROVED_MODELS?.trim() ||
+    process.env.AGENT_MODEL ||
+    defaultAgentModel
+  )
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean),
@@ -140,7 +174,9 @@ for (const [provider, prefix] of [
 }
 const textExtractor = configuredTextExtractor(process.env.RETRIEVAL_OCR_MODEL);
 const retrievalEmbeddings = configuredEmbeddings(process.env.RETRIEVAL_EMBEDDING_MODEL);
-const retrievalAnswers = configuredAnswerSynthesizer(process.env.RETRIEVAL_ANSWER_MODEL);
+const retrievalAnswers = configuredAnswerSynthesizer(
+  process.env.RETRIEVAL_ANSWER_MODEL ?? (process.env.GROQ_API_KEY ? defaultAgentModel : undefined),
+);
 const media = configuredMedia(process.env),
   push = configuredPush(process.env);
 const commerce = configuredCommerce(process.env, process.env.WEB_ORIGIN ?? 'http://localhost:3000');

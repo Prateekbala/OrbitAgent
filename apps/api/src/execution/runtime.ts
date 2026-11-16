@@ -29,6 +29,7 @@ export class EveRuntime implements HostedRuntime {
   private readonly client: Client | null;
   private readonly pricing;
   private readonly defaultModel;
+  private readonly externalPricing;
   constructor(
     url: string | undefined,
     secret: string | undefined,
@@ -44,6 +45,9 @@ export class EveRuntime implements HostedRuntime {
     this.configured = Boolean(url && secret);
     this.pricing = options.pricing ?? {};
     this.defaultModel = options.defaultModel;
+    this.externalPricing = [options.defaultModel, ...(options.models ?? [])].some((model) =>
+      model?.startsWith('groq/'),
+    );
     this.capabilities = {
       models: options.models ?? [],
       durableCheckpoints: options.durabilityQualified ?? false,
@@ -127,7 +131,7 @@ export class EveRuntime implements HostedRuntime {
         event.data &&
         'usage' in event.data
       ) {
-        usage = runtimeUsage(event.data.usage);
+        usage = this.usage(event.data.usage);
       }
     }
     return { output: agentOutput.parse(result.data), ...(usage ? { usage } : {}) };
@@ -149,7 +153,7 @@ export class EveRuntime implements HostedRuntime {
       if ((event.type === 'session.waiting' || event.type === 'session.completed') && output)
         return {
           output: agentOutput.parse(output),
-          ...(event.data && 'usage' in event.data ? { usage: runtimeUsage(event.data.usage) } : {}),
+          ...(event.data && 'usage' in event.data ? { usage: this.usage(event.data.usage) } : {}),
         };
     }
     throw new Error('The existing hosted turn has no settled result.');
@@ -171,7 +175,7 @@ export class EveRuntime implements HostedRuntime {
       }
       if (event.type === 'session.waiting' || event.type === 'session.completed') {
         settled = true;
-        if (event.data && 'usage' in event.data) usage = runtimeUsage(event.data.usage);
+        if (event.data && 'usage' in event.data) usage = this.usage(event.data.usage);
       }
       if (
         event.type === 'session.failed' ||
@@ -189,6 +193,10 @@ export class EveRuntime implements HostedRuntime {
   async cancel(sessionId: string) {
     if (this.client)
       await this.client.sessions.attach(sessionId).cancel({ signal: AbortSignal.timeout(5000) });
+  }
+  private usage(value: unknown) {
+    const usage = runtimeUsage(value);
+    return this.externalPricing ? { ...usage, costMicros: null } : usage;
   }
 }
 function runtimeUsage(value: unknown): RuntimeUsage {

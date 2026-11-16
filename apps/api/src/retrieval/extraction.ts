@@ -1,11 +1,13 @@
-import { languageModel } from '../lib/model-provider.js';
+import { languageModel, isModelIdentifier } from '@ao/models';
 import { generateText } from 'ai';
 import type { TextExtractor } from '../modules/retrieval.js';
 import { AppError } from '../lib/errors.js';
 export function configuredTextExtractor(model?: string): TextExtractor | undefined {
   if (!model) return undefined;
-  if (!/^[a-z0-9_-]+\/[a-z0-9._-]+$/i.test(model))
+  if (!isModelIdentifier(model))
     throw new Error('RETRIEVAL_OCR_MODEL must be a provider/model identifier.');
+  if (model.startsWith('groq/'))
+    throw new Error('GPT-OSS is text-only; configure a separate image/PDF OCR model.');
   return {
     id: 'gateway-ocr:' + model,
     async extract({ data, contentType, signal }) {

@@ -36,6 +36,7 @@ export class ResumableUploads {
     body: Buffer,
     signal: AbortSignal,
   ) {
+    this.files.requireUploadsAvailable();
     if (
       !body.length ||
       body.length > uploadChunkBytes ||
@@ -130,6 +131,7 @@ export class ResumableUploads {
     return this.status(p, id);
   }
   async complete(p: Identity, id: string, signal: AbortSignal) {
+    this.files.requireUploadsAvailable();
     const state = await this.status(p, id);
     if (state.complete) return this.files.metadata(p, id);
     if (state.offset !== state.size)

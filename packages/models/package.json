@@ -1,0 +1,19 @@
+{
+  "name": "@ao/models",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./configuration": "./src/configuration.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/gateway": "^4.0.123",
+    "@ai-sdk/groq": "^4.0.74",
+    "@ai-sdk/openai-compatible": "^3.0.78",
+    "ai": "^7.0.150"
+  }
+}

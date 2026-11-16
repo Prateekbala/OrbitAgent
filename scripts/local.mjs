@@ -23,6 +23,9 @@ async function optional(path) {
 const profilePath = resolve(directory, 'environment');
 const prior = parseEnv(await optional(profilePath));
 const rootEnv = parseEnv(await optional(resolve(root, '.env')));
+const modelProvider =
+  process.env.ORBIT_LOCAL_MODEL_PROVIDER ?? rootEnv.ORBIT_LOCAL_MODEL_PROVIDER ?? 'ollama';
+const useGroq = modelProvider === 'groq';
 const vapid =
   prior.WEB_PUSH_PUBLIC_KEY && prior.WEB_PUSH_PRIVATE_KEY
     ? { publicKey: prior.WEB_PUSH_PUBLIC_KEY, privateKey: prior.WEB_PUSH_PRIVATE_KEY }
@@ -40,18 +43,25 @@ const profile = {
   EVE_RUNTIME_URL: 'http://127.0.0.1:4100',
   EVE_SERVICE_TOKEN: prior.EVE_SERVICE_TOKEN || randomBytes(32).toString('base64url'),
   OLLAMA_BASE_URL: 'http://127.0.0.1:11435/v1',
-  AGENT_MODEL: 'ollama/orbit-chat',
-  AGENT_APPROVED_MODELS: 'ollama/orbit-chat',
-  AGENT_MODEL_PRICING_JSON: JSON.stringify({
-    'ollama/orbit-chat': { inputMicrosPerMillion: 0, outputMicrosPerMillion: 0 },
-  }),
+  AGENT_MODEL: useGroq ? 'groq/openai/gpt-oss-120b' : 'ollama/orbit-chat',
+  AGENT_APPROVED_MODELS: useGroq ? 'groq/openai/gpt-oss-120b' : 'ollama/orbit-chat',
+  AGENT_MODEL_PRICING_JSON: JSON.stringify(
+    useGroq
+      ? {
+          'groq/openai/gpt-oss-120b': {
+            inputMicrosPerMillion: 150000,
+            outputMicrosPerMillion: 600000,
+          },
+        }
+      : { 'ollama/orbit-chat': { inputMicrosPerMillion: 0, outputMicrosPerMillion: 0 } },
+  ),
   EVE_DURABILITY_QUALIFIED: 'false',
   AI_GATEWAY_API_KEY: '',
   VERCEL_OIDC_TOKEN: '',
   TOOL_SANDBOX_ENABLED: 'true',
   TOOL_SANDBOX_PROVIDER: 'docker',
   RETRIEVAL_EMBEDDING_MODEL: 'ollama/orbit-embeddings',
-  RETRIEVAL_ANSWER_MODEL: 'ollama/orbit-chat',
+  RETRIEVAL_ANSWER_MODEL: useGroq ? 'groq/openai/gpt-oss-120b' : 'ollama/orbit-chat',
   RETRIEVAL_OCR_MODEL: '',
   LIVEKIT_URL: 'ws://localhost:7880',
   LIVEKIT_API_KEY: 'orbit-local',
@@ -193,6 +203,12 @@ async function stop(name) {
   throw new Error(name + ' is still shutting down; data was not forcibly terminated.');
 }
 const operation = process.argv[2] ?? 'status';
+if (['up', 'restart'].includes(operation)) {
+  if (!['ollama', 'groq'].includes(modelProvider))
+    throw new Error('ORBIT_LOCAL_MODEL_PROVIDER must be ollama or groq.');
+  if (useGroq && !env.GROQ_API_KEY?.trim())
+    throw new Error('Set GROQ_API_KEY before starting the Groq local profile.');
+}
 if (['up', 'prepare'].includes(operation)) {
   const { stdout: dockerHost } = await exec('docker', [
     'context',
@@ -235,9 +251,13 @@ if (operation === 'prepare') {
   for (const file of ['compose.mail.yaml', 'compose.local.yaml', 'compose.calls.yaml'])
     await run('docker', ['compose', '-f', file, 'up', '-d', '--wait', '--wait-timeout', '300']);
   await wait('http://127.0.0.1:11435/api/tags');
-  console.log('Preparing local model weights; the first run downloads approximately 2.2 GB.');
+  console.log(
+    useGroq
+      ? 'Preparing local embeddings; text generation uses Groq.'
+      : 'Preparing local model weights; the first run downloads approximately 2.2 GB.',
+  );
   const tags = await (await fetch('http://127.0.0.1:11435/api/tags')).json();
-  for (const model of ['qwen2.5:3b', 'nomic-embed-text:v1.5'])
+  for (const model of useGroq ? ['nomic-embed-text:v1.5'] : ['qwen2.5:3b', 'nomic-embed-text:v1.5'])
     if (!tags.models.some((m) => m.name === model))
       await run(
         'docker',
@@ -245,10 +265,12 @@ if (operation === 'prepare') {
         root,
         'models.log',
       );
-  for (const [name, file] of [
-    ['orbit-chat', 'Modelfile'],
-    ['orbit-embeddings', 'EmbeddingModelfile'],
-  ])
+  for (const [name, file] of useGroq
+    ? [['orbit-embeddings', 'EmbeddingModelfile']]
+    : [
+        ['orbit-chat', 'Modelfile'],
+        ['orbit-embeddings', 'EmbeddingModelfile'],
+      ])
     await run(
       'docker',
       [
@@ -299,7 +321,11 @@ if (operation === 'prepare') {
   await run(process.execPath, ['--import', 'tsx', 'tests/runtime/smoke.ts']);
   await run(process.execPath, ['--import', 'tsx', 'tests/runtime/local-email.ts']);
   await run(process.execPath, ['--import', 'tsx', 'tests/runtime/local-sandbox.ts']);
-  await run(process.execPath, ['--import', 'tsx', 'tests/runtime/local-models.ts']);
+  if (useGroq)
+    console.log(
+      'Groq live inference was not run by local verification. Provider contract tests use synthetic responses.',
+    );
+  else await run(process.execPath, ['--import', 'tsx', 'tests/runtime/local-models.ts']);
 } else if (operation === 'status') {
   for (const name of Object.keys(definitions))
     console.log(

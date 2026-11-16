@@ -10,8 +10,8 @@ import { ClamAvScanner } from '../src/files/scanner.js';
 import { S3FileStore } from '../src/files/storage.js';
 import { configuredFiles } from '../src/files/config.js';
 describe('file transport contracts', () => {
-  it('requires private object storage and a scanner in production', () => {
-    expect(() => configuredFiles({ NODE_ENV: 'production' }, tmpdir())).toThrow(/CLAMAV_HOST/);
+  it('requires private object storage in production', () => {
+    expect(() => configuredFiles({ NODE_ENV: 'production' }, tmpdir())).toThrow(/S3_BUCKET/);
     expect(() =>
       configuredFiles(
         { NODE_ENV: 'production', FILE_STORAGE_PROVIDER: 'local', CLAMAV_HOST: 'scanner' },

@@ -1,4 +1,4 @@
-import { languageModel } from '../lib/model-provider.js';
+import { languageModel, isModelIdentifier } from '@ao/models';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import type { RetrievalHit } from '@ao/contracts/retrieval';
@@ -39,7 +39,7 @@ export interface AnswerSynthesizer {
 }
 export function configuredAnswerSynthesizer(model?: string): AnswerSynthesizer | undefined {
   if (!model) return undefined;
-  if (!/^[a-z0-9_-]+\/[a-z0-9._-]+$/i.test(model))
+  if (!isModelIdentifier(model))
     throw new Error('RETRIEVAL_ANSWER_MODEL must be a provider/model identifier.');
   return {
     model,

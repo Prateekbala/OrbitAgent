@@ -1,11 +1,13 @@
-import { embeddingModel } from '../lib/model-provider.js';
+import { embeddingModel, isModelIdentifier } from '@ao/models';
 import { embedMany } from 'ai';
 import { AppError } from '../lib/errors.js';
 import type { Embeddings } from './service.js';
 export function configuredEmbeddings(model?: string): Embeddings | undefined {
   if (!model) return undefined;
-  if (!/^[a-z0-9_-]+\/[a-z0-9._-]+$/i.test(model))
+  if (!isModelIdentifier(model))
     throw new Error('RETRIEVAL_EMBEDDING_MODEL must be a provider/model identifier.');
+  if (model.startsWith('groq/'))
+    throw new Error('GPT-OSS does not produce embeddings; configure a dedicated embedding model.');
   return {
     model,
     async embed(values, signal) {

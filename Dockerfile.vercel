@@ -1,0 +1,20 @@
+FROM node:24-bookworm-slim
+WORKDIR /app
+RUN npm install --global npm@12.2.1
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/database/package.json packages/database/package.json
+COPY packages/models/package.json packages/models/package.json
+RUN npm ci --omit=dev --ignore-scripts --workspace @ao/api --workspace @ao/contracts --workspace @ao/database --workspace @ao/models
+COPY tsconfig.base.json ./
+COPY apps/api/tsconfig.json apps/api/tsconfig.json
+COPY apps/api/src apps/api/src
+COPY packages/contracts/src packages/contracts/src
+COPY packages/database/src packages/database/src
+COPY packages/models/src packages/models/src
+COPY packages/database/migrations packages/database/migrations
+USER node
+ENV NODE_ENV=production
+EXPOSE 8081
+CMD ["node", "--import", "tsx", "apps/api/src/vercel-worker.ts"]

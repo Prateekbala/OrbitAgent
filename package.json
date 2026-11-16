@@ -45,7 +45,17 @@
     "ops:load": "node --import tsx scripts/operations/load-smoke.ts",
     "ops:restore-drill": "node --import tsx tests/operations/restore-drill.ts",
     "ops:test": "node --test tests/operations/*.test.mjs",
-    "lint:unused": "knip --treat-config-hints-as-errors"
+    "lint:unused": "knip --treat-config-hints-as-errors",
+    "vercel:install": "npx --yes npm@12.2.1 ci --ignore-scripts --workspace @ao/web --workspace @ao/api --workspace @ao/contracts --workspace @ao/database --workspace @ao/models --include-workspace-root",
+    "deploy:check": "node --env-file-if-exists=.env.vercel.local --import tsx scripts/deployment/check.ts",
+    "deploy:keys": "node scripts/deployment/generate-keys.mjs",
+    "deploy:migrate": "node --env-file-if-exists=.env.vercel.local --env-file-if-exists=.env.vercel-migration.local --import tsx scripts/deployment/migrate.ts",
+    "test:deployment": "node --import tsx --test tests/deployment/*.test.ts",
+    "deploy:database": "node --env-file-if-exists=.env.vercel.local --env-file-if-exists=.env.vercel-migration.local --import tsx scripts/deployment/prepare-database.ts",
+    "audio:transcribe": "node --env-file-if-exists=.env --import tsx apps/api/src/calls/transcribe-audio.ts",
+    "test:release-flow": "node scripts/verification/release-flow.mjs",
+    "test:release-flow:postgres": "node scripts/verification/postgres-release.mjs",
+    "test:deployment:postgres": "node scripts/verification/postgres-release.mjs --skip-browser"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

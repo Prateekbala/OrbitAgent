@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { configuredEmbeddings } from '../src/retrieval/embeddings.js';
-import { languageModel } from '../src/lib/model-provider.js';
+import { languageModel } from '@ao/models';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 afterEach(() => {

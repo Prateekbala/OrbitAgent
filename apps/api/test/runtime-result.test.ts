@@ -15,6 +15,26 @@ const settled = [
   { type: 'session.waiting', data: { usage: { inputTokens: 100, outputTokens: 20 } } },
 ];
 describe('hosted turn settlement', () => {
+  it('does not treat an unqualified direct-provider cost estimate as free inference', async () => {
+    boundary.result.mockResolvedValue({
+      status: 'completed',
+      data: output,
+      events: [
+        ...settled,
+        {
+          type: 'session.completed',
+          data: { usage: { inputTokens: 100, outputTokens: 30, costUsd: 0 } },
+        },
+      ],
+    });
+    const direct = new EveRuntime('http://127.0.0.1:4100', 'x'.repeat(32), {
+      defaultModel: 'groq/openai/gpt-oss-120b',
+      models: ['groq/openai/gpt-oss-120b'],
+    });
+    expect(
+      (await direct.generateDetailed('session', request, AbortSignal.timeout(1000))).usage,
+    ).toEqual({ inputTokens: 100, outputTokens: 30, costMicros: null });
+  });
   it.each(['waiting', 'completed'])(
     'accepts a validated completed turn in a %s session',
     async (status) => {

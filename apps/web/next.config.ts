@@ -12,6 +12,7 @@ const config: NextConfig = {
     }));
   },
   async rewrites() {
+    if (process.env.VERCEL === '1') return [];
     return [
       {
         source: '/.well-known/:path*',

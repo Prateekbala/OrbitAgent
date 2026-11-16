@@ -10,3 +10,6 @@ See INTER-TIGHT-LICENSE.txt in this directory.
 https://github.com/google/fonts/tree/main/ofl/intertight
 
 Product previews, Orbit copy, layout implementation, and interactions are authored in this repository.
+
+Footer landscape from the requested Notia reference, optimized locally as footer-landscape.webp:
+https://framerusercontent.com/images/rncxePRXQGQMHRB0f7s2TueXrVc.png

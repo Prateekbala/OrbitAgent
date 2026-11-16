@@ -2,7 +2,7 @@ import { testEmail, verifyFixtureAccount } from './email.js';
 import { testDatabase } from './database.js';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { migrate, type Database } from '@ao/database';
+import { migrate, assertRuntimeConnection, type Database } from '@ao/database';
 import { buildApp } from '../src/app.js';
 import type { FastifyInstance } from 'fastify';
 let db: Database, app: FastifyInstance;
@@ -35,6 +35,10 @@ afterAll(async () => {
   await db.close();
 });
 describe('platform invariants', () => {
+  it('requires explicit shared-login qualification for the migration owner', async () => {
+    await expect(assertRuntimeConnection(db)).rejects.toThrow('non-owner');
+    await expect(assertRuntimeConnection(db, { sharedLogin: true })).resolves.toBeUndefined();
+  });
   it('requires authentication and rejects cross-origin mutations', async () => {
     expect((await app.inject('/v1/bootstrap')).statusCode).toBe(401);
     expect(
@@ -278,6 +282,6 @@ describe('transaction and reference integrity', () => {
       (await db.query('SELECT version FROM schema_migrations ORDER BY version')).map(
         (row) => row.version,
       ),
-    ).toEqual(Array.from({ length: 77 }, (_, index) => index + 1));
+    ).toEqual(Array.from({ length: 78 }, (_, index) => index + 1));
   });
 });

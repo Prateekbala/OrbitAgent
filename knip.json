@@ -12,7 +12,12 @@
       "project": ["*.ts", "scripts/**/*.{ts,mjs}", "tests/**/*.{ts,mjs}", "examples/**/*.ts"]
     },
     "apps/api": {
-      "entry": ["src/model-broker/server.ts", "src/governance/erasure-server.ts"],
+      "entry": [
+        "src/model-broker/server.ts",
+        "src/governance/erasure-server.ts",
+        "src/vercel.ts",
+        "src/vercel-worker.ts"
+      ],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "apps/web": {

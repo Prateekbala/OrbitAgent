@@ -3,6 +3,8 @@ import pg from 'pg';
 import { readFile, readdir, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { statements } from './statements.js';
+import { postgresPoolOptions } from './connection.js';
+export { decodeDatabaseCertificate } from './connection.js';
 export * from './scope.js';
 export { statements } from './statements.js';
 export interface Sql {
@@ -16,15 +18,18 @@ export interface Database extends Sql {
   close(): Promise<void>;
 }
 export async function database(
-  options: { url?: string; directory?: string; onPoolError?: (code: string) => void } = {},
+  options: {
+    url?: string;
+    directory?: string;
+    onPoolError?: (code: string) => void;
+    maxConnections?: number;
+    caCertificate?: string;
+    onPoolCreated?: (pool: pg.Pool) => void;
+  } = {},
 ): Promise<Database> {
   if (options.url) {
-    const pool = new pg.Pool({
-      connectionString: options.url,
-      max: 10,
-      connectionTimeoutMillis: 5000,
-      statement_timeout: 15000,
-    });
+    const pool = new pg.Pool(postgresPoolOptions({ ...options, url: options.url }));
+    options.onPoolCreated?.(pool);
     pool.on('error', (error) => {
       const code = (error as { code?: string }).code;
       options.onPoolError?.(code && /^[A-Z0-9]{5}$/.test(code) ? code : 'DATABASE_POOL_ERROR');

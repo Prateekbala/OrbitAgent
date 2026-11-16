@@ -9,9 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/gateway": "^4.0.123",
-    "@ai-sdk/openai-compatible": "^3.0.78",
     "@ao/contracts": "^0.1.0",
+    "@ao/models": "*",
     "ai": "^7.0.150",
     "eve": "0.83.0"
   }

@@ -64,6 +64,7 @@ jobs:
       - run: npm run lint:unused
       - run: npm run typecheck
       - run: npm run ops:test
+      - run: npm run test:deployment
       - name: Check generated public API compatibility
         run: npm run api:check
       - name: Test Python SDK
@@ -73,8 +74,6 @@ jobs:
       - run: npm run build
       - name: Compile managed runtime without inference
         run: npm run runtime:build
-        env:
-          AGENT_MODEL: fixture/compile-only
 
   postgres:
     name: PostgreSQL 17 integration tests
@@ -122,10 +121,50 @@ jobs:
           path: retrieval-evaluation-postgres.json
           retention-days: 7
 
+  deployment:
+    name: Deployment bootstrap and container acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --global npm@12.2.1
+      - run: npm ci
+      - name: Verify TLS, restricted runtime logins and private worker health
+        run: npm run test:deployment:postgres
+      - name: Preserve redacted deployment failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployment-failures
+          path: .data/release-checks/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
   browser:
     name: Chromium end-to-end tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: orbit_ci_test
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v6
         with:
@@ -141,6 +180,8 @@ jobs:
       - run: npm run build
       - name: Test production web application with isolated API fixtures
         run: npm run test:e2e
+        env:
+          TEST_DATABASE_URL: postgres://postgres:orbit_ci_test@127.0.0.1:5432/postgres
       - name: Preserve browser reports and failure traces
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

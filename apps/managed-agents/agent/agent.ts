@@ -1,40 +1,9 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { defineAgent, defineDynamic } from 'eve';
-import { gateway } from '@ai-sdk/gateway';
-import { simulateStreamingMiddleware, wrapLanguageModel } from 'ai';
+import { wrapLanguageModel } from 'ai';
 import { agentConfiguration } from '@ao/contracts/agents';
-import { localReplyMiddleware } from './local-reply.js';
-const model = process.env.AGENT_MODEL;
-function selectedModel(id: string, maxProposals: number) {
-  if (!id.startsWith('ollama/')) return gateway(id);
-  const endpoint = new URL(process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11435/v1');
-  if (
-    endpoint.protocol !== 'http:' ||
-    !['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname) ||
-    endpoint.username ||
-    endpoint.password ||
-    endpoint.search ||
-    endpoint.hash ||
-    !/^\/v1\/?$/.test(endpoint.pathname)
-  )
-    throw new Error('OLLAMA_BASE_URL must be a loopback HTTP /v1 endpoint.');
-  const modelId = id.slice('ollama/'.length);
-  if (!/^[a-z0-9._-]+(?::[a-z0-9._-]+)?$/i.test(modelId))
-    throw new Error('Invalid local model identifier.');
-  const local = createOpenAICompatible({
-    name: 'ollama',
-    baseURL: endpoint.toString().replace(/\/$/, ''),
-    includeUsage: true,
-    supportsStructuredOutputs: true,
-    fetch: (url, init) => fetch(url, { ...init, redirect: 'error' }),
-  }).chatModel(modelId);
-  return wrapLanguageModel({
-    model: local,
-    middleware: [simulateStreamingMiddleware(), localReplyMiddleware(maxProposals)],
-  });
-}
-
-if (!model) throw new Error('Set AGENT_MODEL to an approved model before building the runtime.');
+import { defaultAgentModel } from '@ao/models/configuration';
+import { selectedModel } from './models.js';
+const model = process.env.AGENT_MODEL ?? defaultAgentModel;
 export default defineAgent({
   model: defineDynamic({
     events: {
@@ -102,7 +71,9 @@ export default defineAgent({
         });
         return selected.startsWith('ollama/')
           ? { model: wrapped, modelContextWindowTokens: 16384 }
-          : wrapped;
+          : selected.startsWith('groq/')
+            ? { model: wrapped, modelContextWindowTokens: 131072 }
+            : wrapped;
       },
     },
   }),

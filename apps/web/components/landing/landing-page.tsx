@@ -11,7 +11,6 @@ import {
   Link2,
   LockKeyhole,
   MessageSquare,
-  Orbit,
   Search,
   ShieldCheck,
   Workflow,
@@ -28,6 +27,7 @@ import styles from './landing.module.css';
 import sections from './sections.module.css';
 import { IntegrationShowcase } from './integration-showcase';
 import { PricingSection } from './pricing-section';
+import { LandingFooter } from './landing-footer';
 import { LandingMotion, MotionLink, Reveal, RevealSection } from './landing-motion';
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -574,62 +574,8 @@ export function LandingPage() {
           </RevealSection>
 
           <PricingSection />
-
-          <RevealSection className={`${styles.finalCta} ${sections.closingSection}`}>
-            <Label>Your Next Chapter</Label>
-            <h2>
-              Less catching up.
-              <br />
-              More moving work forward.
-            </h2>
-            <p>Bring your people, your agents, and your next big idea into Orbit.</p>
-            <div>
-              <Cta />
-              <Cta href="/sign-in" secondary>
-                Sign in to your workspace
-              </Cta>
-            </div>
-          </RevealSection>
         </main>
-        <footer className={styles.footer}>
-          <div className={styles.footerTop}>
-            <div>
-              <a className={styles.brand} href="/" aria-label="Orbit home">
-                <span className={styles.brandMark}>
-                  <Orbit size={27} />
-                </span>
-                Orbit
-              </a>
-              <p>
-                A shared workspace
-                <br />
-                for people and agents.
-              </p>
-            </div>
-            <nav aria-label="Product links">
-              <strong>Product</strong>
-              <a href="#product">Overview</a>
-              <a href="#features">Features</a>
-              <a href="#integrations">Integrations</a>
-            </nav>
-            <nav aria-label="Explore links">
-              <strong>Explore</strong>
-              <a href="#how-to">How it works</a>
-              <a href="#why-orbit">Why Orbit</a>
-              <a href="#pricing">Plans & pricing</a>
-            </nav>
-            <nav aria-label="Account links">
-              <strong>Workspace</strong>
-              <a href="/sign-up">Get started</a>
-              <a href="/sign-in">Sign in</a>
-              <a href="/forgot-password">Account recovery</a>
-            </nav>
-          </div>
-          <div className={styles.footerBottom}>
-            <span>Orbit · Your team, in sync.</span>
-            <span>Built for the way you work next.</span>
-          </div>
-        </footer>
+        <LandingFooter />
       </div>
     </LandingMotion>
   );

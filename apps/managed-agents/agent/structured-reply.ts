@@ -2,15 +2,15 @@ import { randomUUID } from 'node:crypto';
 import type { LanguageModelMiddleware } from 'ai';
 import { agentOutput } from '@ao/contracts';
 
-export function localReplyMiddleware(maxProposals = 4): LanguageModelMiddleware {
+export function structuredReplyMiddleware(maxProposals = 4): LanguageModelMiddleware {
   if (!Number.isInteger(maxProposals) || maxProposals < 0 || maxProposals > 4)
-    throw new Error('Invalid local proposal limit.');
+    throw new Error('Invalid proposal limit.');
   return {
     specificationVersion: 'v4',
     transformParams: async ({ params }) => {
       const reply = params.tools?.[0];
       if (params.tools?.length !== 1 || reply?.type !== 'function' || reply.name !== 'eve__reply')
-        throw new Error('LOCAL_REPLY_TOOL_REQUIRED');
+        throw new Error('STRUCTURED_REPLY_TOOL_REQUIRED');
       const { tools: _tools, toolChoice: _choice, ...options } = params;
       return {
         ...options,
@@ -40,13 +40,13 @@ export function localReplyMiddleware(maxProposals = 4): LanguageModelMiddleware 
     },
     wrapGenerate: async ({ doGenerate }) => {
       const result = await doGenerate();
-      if (result.finishReason.unified !== 'stop') throw new Error('LOCAL_REPLY_INCOMPLETE');
+      if (result.finishReason.unified !== 'stop') throw new Error('STRUCTURED_REPLY_INCOMPLETE');
       const text = result.content
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
         .join('');
       const output = agentOutput.parse(JSON.parse(text));
-      if (output.proposals.length > maxProposals) throw new Error('LOCAL_PROPOSAL_LIMIT');
+      if (output.proposals.length > maxProposals) throw new Error('PROPOSAL_LIMIT');
       return {
         ...result,
         content: [

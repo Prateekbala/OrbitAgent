@@ -108,14 +108,21 @@ export function scopedDatabase(base: Database): Database {
   wrapped.set(result, result);
   return result;
 }
-export async function assertRuntimeConnection(db: Database) {
+export async function assertRuntimeConnection(
+  db: Database,
+  options: { sharedLogin?: boolean } = {},
+) {
   const [role] = await db.query(
     'SELECT rolsuper,rolbypassrls,rolinherit FROM pg_roles WHERE rolname=current_user',
   );
   const [ownership] = await db.query(
     "SELECT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p') AND pg_has_role(current_user,c.relowner,'MEMBER')) AS owns",
   );
-  if (!role || role.rolsuper || role.rolbypassrls || role.rolinherit || ownership?.owns)
+  if (
+    !role ||
+    (!options.sharedLogin &&
+      (role.rolsuper || role.rolbypassrls || role.rolinherit || ownership?.owns))
+  )
     throw new Error(
       'Production DATABASE_URL must use a non-owner login with NOINHERIT, without SUPERUSER, BYPASSRLS, or membership in a table-owner role.',
     );
@@ -123,7 +130,7 @@ export async function assertRuntimeConnection(db: Database) {
     const [row] = await db.query("SELECT pg_has_role(current_user,$1,'MEMBER') allowed", [
       privileged,
     ]);
-    if (row?.allowed)
+    if (row?.allowed && !options.sharedLogin)
       throw new Error('Application logins must not possess isolated service roles.');
   }
   for (const name of ['ao_runtime', 'ao_identity', 'ao_dispatcher', 'ao_worker']) {
@@ -135,6 +142,15 @@ export async function assertRuntimeConnection(db: Database) {
     if (grant.rolsuper || grant.rolbypassrls || grant.rolcanlogin)
       throw new Error(`Application role ${name} must be NOLOGIN, NOSUPERUSER and NOBYPASSRLS.`);
   }
+  if (options.sharedLogin)
+    await db.transaction(async (tx) => {
+      await tx.query('SET LOCAL ROLE ao_runtime');
+      const [row] = await tx.query(
+        "SELECT row_security_active('tasks'::regclass) tasks, row_security_active('messages'::regclass) messages",
+      );
+      if (!row?.tasks || !row?.messages)
+        throw new Error('Shared connections require active tenant row-level security.');
+    });
 }
 export async function assertIsolatedServiceConnection(
   db: Database,

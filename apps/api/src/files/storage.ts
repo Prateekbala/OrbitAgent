@@ -15,7 +15,7 @@ import {
   AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 export interface FileStore {
-  readonly id: 'local' | 's3';
+  readonly id: 'local' | 's3' | 'cloudinary';
   put(key: string, path: string, signal: AbortSignal): Promise<void>;
   get(key: string, range?: ByteRange): Promise<Readable>;
   delete(key: string): Promise<void>;

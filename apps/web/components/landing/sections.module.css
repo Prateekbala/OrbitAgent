@@ -829,13 +829,6 @@ section.principlesSection article p {
 section.principlesSection article:hover {
   box-shadow: none;
 }
-section.closingSection > p:not(:first-child) {
-  font-size: 19px;
-  color: #53615b;
-  max-width: 580px;
-  margin-top: 24px;
-  padding-inline: 18px;
-}
 .srOnly {
   position: absolute;
   width: 1px;
@@ -1275,9 +1268,6 @@ section.closingSection > p:not(:first-child) {
   section.principlesSection article {
     min-height: auto;
     padding-top: 26px;
-  }
-  section.closingSection > p:not(:first-child) {
-    font-size: 17px;
   }
 }
 @media (max-width: 360px) {

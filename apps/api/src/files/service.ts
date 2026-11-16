@@ -49,6 +49,14 @@ export class FileService {
     private readonly db: Database,
     readonly dependencies: FileDependencies,
   ) {}
+  requireUploadsAvailable() {
+    if (this.dependencies.scanner.available === false)
+      throw new AppError(
+        503,
+        'FILE_UPLOADS_UNAVAILABLE',
+        'File uploads are temporarily unavailable.',
+      );
+  }
   async reserve(p: Identity, conversation: string, input: z.infer<typeof fileInput>) {
     return this.reserveSource(p, { conversation_id: conversation, task_id: null }, input);
   }
@@ -60,6 +68,7 @@ export class FileService {
     source: { conversation_id: string | null; task_id: string | null },
     input: z.infer<typeof fileInput>,
   ) {
+    this.requireUploadsAvailable();
     return this.db.transaction(async (tx) => {
       const [workspace] = await tx.query(
         'SELECT storage_bytes,storage_limit_bytes FROM workspaces WHERE id=$1 FOR UPDATE',
@@ -180,6 +189,7 @@ export class FileService {
     }>,
     signal: AbortSignal,
   ) {
+    this.requireUploadsAvailable();
     const memberKey = `${p.workspaceId}:${p.membershipId}`;
     if (this.active >= 4 || (this.members.get(memberKey) ?? 0) >= 2)
       throw new AppError(429, 'UPLOAD_BUSY', 'Wait for another upload to finish.');

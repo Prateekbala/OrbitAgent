@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { generateText, simulateStreamingMiddleware, streamText, wrapLanguageModel } from 'ai';
 import { agentOutput } from '@ao/contracts';
-import { localReplyMiddleware } from '../../managed-agents/agent/local-reply.js';
+import { structuredReplyMiddleware } from '../../managed-agents/agent/structured-reply.js';
 
 afterEach(() => vi.unstubAllGlobals());
 function setup(content: string, finishReason = 'stop', maxProposals = 4) {
@@ -29,7 +29,7 @@ function setup(content: string, finishReason = 'stop', maxProposals = 4) {
       baseURL: 'http://127.0.0.1:11435/v1',
       supportsStructuredOutputs: true,
     }).chatModel('orbit-chat'),
-    middleware: [simulateStreamingMiddleware(), localReplyMiddleware(maxProposals)],
+    middleware: [simulateStreamingMiddleware(), structuredReplyMiddleware(maxProposals)],
   });
   return { model, request };
 }
@@ -70,7 +70,7 @@ describe('local structured agent reply protocol', () => {
         prompt: 'Hello',
         maxRetries: 0,
       }),
-    ).rejects.toThrow('LOCAL_REPLY_TOOL_REQUIRED');
+    ).rejects.toThrow('STRUCTURED_REPLY_TOOL_REQUIRED');
     expect(request).not.toHaveBeenCalled();
   });
   it('rejects proposals above the configured limit even if a provider ignores the schema', async () => {
@@ -80,7 +80,7 @@ describe('local structured agent reply protocol', () => {
       0,
     );
     await expect(generateText({ model, tools, prompt: 'Hello', maxRetries: 0 })).rejects.toThrow(
-      'LOCAL_PROPOSAL_LIMIT',
+      'PROPOSAL_LIMIT',
     );
     expect(request).toHaveBeenCalledOnce();
   });

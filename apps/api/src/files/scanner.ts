@@ -2,8 +2,21 @@ import { connect } from 'node:net';
 import { createReadStream, type ReadStream } from 'node:fs';
 import { once } from 'node:events';
 import { finished } from 'node:stream/promises';
+import { AppError } from '../lib/errors.js';
 export interface FileScanner {
+  readonly available?: boolean;
   scan(path: string, signal: AbortSignal): Promise<'clean' | 'development_only'>;
+}
+export class UnavailableScanner implements FileScanner {
+  readonly available = false;
+  async scan(_path: string, signal: AbortSignal): Promise<'clean'> {
+    signal.throwIfAborted();
+    throw new AppError(
+      503,
+      'FILE_UPLOADS_UNAVAILABLE',
+      'File uploads are temporarily unavailable.',
+    );
+  }
 }
 export class DevelopmentScanner implements FileScanner {
   async scan(_path: string, signal: AbortSignal) {
