@@ -8,12 +8,13 @@ const mobile = createRequire(new URL('../../apps/mobile/package.json', import.me
 test('patched Expo schemas validate plugin and MCP command boundaries', () => {
   assert.ok(Number(cli('zod/package.json').version.split('.')[0]) >= 4);
   const { PluginSchema, DevToolsPluginOutputSchema } = cli(
-    './build/src/start/server/DevToolsPlugin.schema.js',
+    './build/src/start/server/devtools/DevToolsPlugin.schema.js',
   );
   const { createMCPDevToolsExtensionSchema } = cli(
-    './build/src/start/server/createMCPDevToolsExtensionSchema.js',
+    './build/src/start/server/mcp/createMCPDevToolsExtensionSchema.js',
   );
-  const plugin = PluginSchema.parse({
+  const { validate } = cli('@expo/schema-utils');
+  const plugin = {
     packageName: 'orbit-test',
     packageRoot: '/synthetic',
     cliExtensions: {
@@ -32,8 +33,9 @@ test('patched Expo schemas validate plugin and MCP command boundaries', () => {
         },
       ],
     },
-  });
-  const schema = createMCPDevToolsExtensionSchema(plugin);
+  };
+  assert.doesNotThrow(() => validate(PluginSchema, plugin));
+  const schema = createMCPDevToolsExtensionSchema(plugin, cli('zod').z);
   assert.equal(
     schema.safeParse({ command: 'inspect', limit: 5, confirm: true, query: 'test' }).success,
     true,
@@ -44,17 +46,13 @@ test('patched Expo schemas validate plugin and MCP command boundaries', () => {
     { command: 'inspect', unexpected: 'injected' },
   ])
     assert.equal(schema.safeParse(value).success, false);
-  assert.equal(
-    DevToolsPluginOutputSchema.safeParse([
+  assert.doesNotThrow(() =>
+    validate(DevToolsPluginOutputSchema, [
       { type: 'text', level: 'info', text: 'Result' },
       { type: 'image', url: 'https://example.com/fixture.png' },
-    ]).success,
-    true,
+    ]),
   );
-  assert.equal(
-    DevToolsPluginOutputSchema.safeParse([{ type: 'audio', url: 'invalid' }]).success,
-    false,
-  );
+  assert.throws(() => validate(DevToolsPluginOutputSchema, [{ type: 'audio', url: 'invalid' }]));
 });
 test('patched Forge preserves Expo signing and rejects malformed DigestAlgorithm elements', () => {
   const forge = signingRequire('node-forge'),

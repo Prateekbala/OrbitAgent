@@ -15,6 +15,13 @@ import { TestMailbox } from '../../apps/api/test/email.js';
 import { EmailService } from '../../apps/api/src/email/service.js';
 import { EmailWorker } from '../../apps/api/src/email/worker.js';
 import { ExecutionWorker } from '../../apps/api/src/execution/worker.js';
+import {
+  BackgroundDispatcher,
+  type BackgroundWorker,
+} from '../../apps/api/src/background/dispatcher.js';
+import { backgroundDatabase } from '../../apps/api/src/background/database.js';
+import { backgroundWakeups } from '../../apps/api/src/background/http.js';
+import { TestBackgroundQueue } from '../../apps/api/test/background-queue.js';
 import { managedRuntimeFixture } from './managed-runtime-fixture.js';
 import { allowBrowserStreams, browserOrigin, proxyApi } from './api-proxy.js';
 
@@ -24,7 +31,7 @@ let origin: string;
 let mailbox: TestMailbox;
 let emailWorker: EmailWorker;
 let execution: ExecutionWorker;
-let stopExecution: (() => Promise<void>) | undefined;
+let queue: TestBackgroundQueue;
 let managed: Awaited<ReturnType<typeof managedRuntimeFixture>> | undefined;
 test.beforeAll(async () => {
   test.setTimeout(180000);
@@ -39,14 +46,30 @@ test.beforeAll(async () => {
     browserOrigin,
   );
   server = await buildApp(db, { origin: browserOrigin, email, runtime: managed.runtime });
+  emailWorker = new EmailWorker(backgroundDatabase(db, 'email'), email);
+  execution = new ExecutionWorker(
+    backgroundDatabase(db, 'execution'),
+    managed.runtime,
+    undefined,
+    undefined,
+    { maxConcurrent: 1, maxDispatchSeconds: 180 },
+  );
+  queue = new TestBackgroundQueue();
+  const background = new BackgroundDispatcher(
+    db,
+    new Map<string, BackgroundWorker>([
+      ['email', emailWorker],
+      ['execution', execution],
+    ]),
+    queue,
+  );
+  queue.dispatcher = background;
+  backgroundWakeups(server, background);
   allowBrowserStreams(server);
   origin = await server.listen({ host: '127.0.0.1', port: 0 });
-  emailWorker = new EmailWorker(db, email);
-  execution = new ExecutionWorker(db, managed.runtime);
-  stopExecution = execution.start(50);
 });
 test.afterAll(async () => {
-  await stopExecution?.();
+  await queue?.close();
   await server?.close();
   await db?.close();
   await managed?.close();
@@ -80,7 +103,9 @@ async function signup(page: Page, context: BrowserContext, workspace: string): P
     page.getByRole('heading', { name: 'Verify your email.', exact: true }),
   ).toBeVisible();
   expect((await api(context, '/v1/bootstrap')).status()).toBe(403);
-  await emailWorker.tick();
+  await expect
+    .poll(() => mailbox.messages.some(({ message }) => message.to.includes(email)))
+    .toBe(true);
   const delivered = mailbox.messages.find(({ message }) => message.to.includes(email));
   expect(delivered).toBeDefined();
   const link = delivered!.message.text.match(
@@ -145,6 +170,8 @@ test('signup, delivered verification, managed Groq reply, exact approval and tas
       managed!.diagnostics(),
     ).toBeVisible({ timeout: 45000 });
     expect(managed!.requests).toHaveLength(1);
+    expect(queue.deliveries.some((message) => message.worker === 'execution')).toBe(true);
+    expect(queue.errors).toEqual([]);
     const providerInput = JSON.stringify(managed!.requests[0]);
     expect(providerInput).toContain(source);
     expect(providerInput).not.toContain(foreign);
@@ -214,7 +241,7 @@ test('signup, delivered verification, managed Groq reply, exact approval and tas
     expect(
       (await api(context, `/v1/approvals/${action!.id}/decisions`, 'POST', decision)).status(),
     ).toBe(409);
-    await execution.tick();
+    await queue.dispatcher.publish();
     expect(await db.query('SELECT id FROM tasks WHERE id=$1', [taskId])).toHaveLength(1);
     expect(
       await db.query('SELECT id FROM approval_decisions WHERE invocation_id=$1', [action!.id]),
@@ -256,6 +283,7 @@ test('signup, delivered verification, managed Groq reply, exact approval and tas
       'Review isolated release',
     );
     expect(managed!.requests).toHaveLength(1);
+    expect(queue.errors).toEqual([]);
     expect(errors).toEqual([]);
   } finally {
     await outsider.close();

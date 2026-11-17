@@ -16,5 +16,5 @@ COPY packages/models/src packages/models/src
 COPY packages/database/migrations packages/database/migrations
 USER node
 ENV NODE_ENV=production
-EXPOSE 8081
-CMD ["node", "--import", "tsx", "apps/api/src/vercel-worker.ts"]
+EXPOSE 3000
+CMD ["node", "--import", "tsx", "apps/api/src/vercel.ts"]

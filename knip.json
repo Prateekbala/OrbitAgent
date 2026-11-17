@@ -12,12 +12,7 @@
       "project": ["*.ts", "scripts/**/*.{ts,mjs}", "tests/**/*.{ts,mjs}", "examples/**/*.ts"]
     },
     "apps/api": {
-      "entry": [
-        "src/model-broker/server.ts",
-        "src/governance/erasure-server.ts",
-        "src/vercel.ts",
-        "src/vercel-worker.ts"
-      ],
+      "entry": ["src/model-broker/server.ts", "src/governance/erasure-server.ts", "src/vercel.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "apps/web": {
@@ -40,7 +35,11 @@
       "project": ["src/**/*.ts", "test/**/*.ts", "scripts/*.mjs"]
     },
     "apps/mobile": {},
-    "packages/*": {}
+    "packages/*": {},
+    "apps/background": {
+      "entry": ["api/worker.ts"],
+      "project": ["api/**/*.ts"]
+    }
   },
   "ignoreIssues": {
     "tests/operations/expo-security.test.mjs": ["unlisted"]

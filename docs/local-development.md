@@ -56,6 +56,12 @@ The root `.env` is preserved. Generated local overrides and the runtime service 
 
 Provider setup follows the installed [eve local-model guide](../node_modules/eve/docs/agent-config.md), [Ollama local API](https://docs.ollama.com/api/openai-compatibility), and [Ollama Docker instructions](https://docs.ollama.com/docker). Container ports bind to loopback only. Real production credentials, durable recovery qualification and live provider acceptance remain separate deployment work.
 
+## Groq text generation
+
+The root `.env.example` contains only the core local settings. The Docker launcher supplies local service addresses, provider selections and persistent development keys automatically; you only need to supply a Groq key when choosing Groq. Additional integrations and operator overrides are listed in [optional configuration](../deploy/optional.env.example). Copy individual settings when enabling those features; they are not required to start the local stack. The Vercel app/worker configuration has its own [minimal deployment template](../deploy/vercel/runtime.env.example).
+
+Set `ORBIT_LOCAL_MODEL_PROVIDER=groq` and `GROQ_API_KEY` in your existing `.env` to use GPT-OSS 120B for agent replies and knowledge answers. Local embeddings continue to use Ollama; the chat-model download is skipped. Stop and start the stack to rebuild the agent runtime after switching providers. The default profile for existing environments remains Ollama. With Groq selected, `local:verify` skips paid inference. See [model configuration](model-configuration.md) for deployment credentials, pricing reservations, and optional Whisper transcription.
+
 ## Repository checks
 
 Run `npm run lint:unused`, `npm run typecheck`, `npm run format:check`, and `npm run api:check` before committing. `npm run check` also runs the unused-code audit, API tests, and production builds. CI runs the unused-code audit with configuration hints treated as errors.

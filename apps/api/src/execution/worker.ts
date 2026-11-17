@@ -29,6 +29,7 @@ export class ExecutionWorker {
     private readonly runtime: HostedRuntime,
     private readonly onError: (error: unknown) => void = () => {},
     private readonly toolSecrets?: IdentitySecrets,
+    private readonly dispatch: { maxConcurrent?: number; maxDispatchSeconds?: number } = {},
   ) {
     this.db = scopedDatabase(db);
   }
@@ -68,6 +69,7 @@ export class ExecutionWorker {
             () => this.pending.delete(active),
           );
           admitted.push(active);
+          if (admitted.length >= (this.dispatch.maxConcurrent ?? Infinity)) break;
         }
       }
       if (wait) await Promise.all(admitted);
@@ -156,7 +158,8 @@ export class ExecutionWorker {
         "UPDATE execution_policies p SET needs_work=EXISTS(SELECT 1 FROM agent_runs r WHERE r.workspace_id=p.workspace_id AND (r.status IN ('queued','running','awaiting_approval','outcome_unknown') OR r.parent_run_id IS NOT NULL AND r.verification_status='pending')) OR EXISTS(SELECT 1 FROM agent_inbox i JOIN agents a ON a.workspace_id=i.workspace_id AND a.id=i.agent_id WHERE i.workspace_id=p.workspace_id AND i.state='pending' AND i.expires_at>now() AND a.runtime='managed' AND a.status='active')",
       );
     });
-    if (!this.runtime.configured || this.pending.size >= 4) return null;
+    if (!this.runtime.configured || this.pending.size >= (this.dispatch.maxConcurrent ?? 4))
+      return null;
     await this.queueMentions();
     return this.db.transaction(async (tx) => {
       const [workspace] = await tx.query('SELECT workspace_id FROM execution_policies LIMIT 1');
@@ -188,7 +191,11 @@ export class ExecutionWorker {
       const lease = randomUUID();
       const [claimed] = await tx.query<RunRow>(
         "UPDATE agent_runs SET status='running',lease_token=$2,lease_expires_at=now()+interval '45 seconds',started_at=coalesce(started_at,now()),deadline_at=least(coalesce(deadline_at,now()+$3*interval '1 second'),coalesce(delegation_deadline,'infinity'::timestamptz)),updated_at=now() WHERE id=$1 RETURNING *",
-        [row.id, lease, configuration.limits.maxSeconds],
+        [
+          row.id,
+          lease,
+          Math.min(configuration.limits.maxSeconds, this.dispatch.maxDispatchSeconds ?? Infinity),
+        ],
       );
       return claimed ?? null;
     });

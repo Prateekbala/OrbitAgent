@@ -16,6 +16,7 @@ export class EmailWorker {
     db: Database,
     private readonly email: EmailService,
     private readonly onError: (code: string) => void = () => {},
+    private readonly batchSize = 10,
   ) {
     this.db = scopedDatabase(db);
   }
@@ -45,7 +46,7 @@ export class EmailWorker {
     await this.db.query(
       "UPDATE email_jobs SET status='failed',error_code='EMAIL_DEADLINE_EXCEEDED',ciphertext=NULL,lease_token=NULL,lease_expires_at=NULL WHERE status IN ('queued','sending') AND deadline<=now()",
     );
-    for (let index = 0; index < 10; index++) {
+    for (let index = 0; index < this.batchSize; index++) {
       const job = await this.db.transaction(async (tx) => {
         const [row] = await tx.query<Job>(
           "SELECT * FROM email_jobs WHERE provider=$1 AND idempotent=$2 AND (status='queued' AND available_at<=now() OR status='sending' AND idempotent AND lease_expires_at<=now()) AND deadline>now() ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1",

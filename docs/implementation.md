@@ -4,6 +4,8 @@ This document records delivered behavior separately from the complete target in 
 
 ## Running locally
 
+The deployment entry points and environment examples are documented in [Vercel/Supabase deployment](vercel-supabase.md). `npm run test:release-flow` verifies the signup-to-agent-approval workflow through the real browser, API and managed runtime, with captured email and simulated Groq responses. `npm run test:release-flow:postgres` additionally qualifies shared/separate connection setup, verified database TLS, production containers and PostgreSQL tenant isolation in disposable Docker services. These checks do not establish live-provider acceptance.
+
 Requires Node.js 24 or newer and npm.
 
 ```sh
@@ -299,7 +301,7 @@ Downloads and previews require a current authenticated conversation participant.
 
 ### Storage configuration and operation
 
-Local development needs no cloud credentials: originals/previews live in private `.data/files`, staging files in `.data/uploads`, outside the web root. Without `CLAMAV_HOST`, development explicitly records `development_only`; no malware-clean claim is made. This bypass cannot be selected by production server configuration. Production requires `FILE_STORAGE_PROVIDER=s3` (or its production default), `S3_BUCKET`, `S3_REGION` and `CLAMAV_HOST`; `CLAMAV_PORT` defaults to 3310. An optional `S3_ENDPOINT` supports compatible storage and must use HTTPS in production. Use the AWS SDK credential chain, preferably a workload identity/IAM role, with GetObject/PutObject/DeleteObject permissions scoped to the private bucket. Enable Block Public Access, transport encryption, encryption at rest, and appropriate region/lifecycle/retention policies on that bucket. The SDK performs no bucket provisioning. Keep ClamAV private, signatures current, and its stream limit above 25 MiB. A scanner outage rejects uploads rather than publishing unscanned files.
+Local development needs no cloud credentials: originals/previews live in private `.data/files`, staging files in `.data/uploads`, outside the web root. Without `CLAMAV_HOST`, development explicitly records `development_only`; no malware-clean claim is made. This bypass cannot be selected by production server configuration. Production requires private object storage. The Vercel profile defaults to Cloudinary; S3 requires `FILE_STORAGE_PROVIDER=s3`, `S3_BUCKET` and `S3_REGION`. Without `CLAMAV_HOST`, production startup succeeds but new upload reservations, uploads and resumable writes return `503 FILE_UPLOADS_UNAVAILABLE`; existing authorized downloads and cleanup continue. Configuring a scanner enables production uploads; `CLAMAV_PORT` defaults to 3310. An optional `S3_ENDPOINT` supports compatible storage and must use HTTPS in production. Use the AWS SDK credential chain, preferably a workload identity/IAM role, with GetObject/PutObject/DeleteObject permissions scoped to the private bucket. Enable Block Public Access, transport encryption, encryption at rest, and appropriate region/lifecycle/retention policies on that bucket. The SDK performs no bucket provisioning. Keep ClamAV private, signatures current, and its stream limit above 25 MiB. A scanner outage rejects uploads rather than publishing unscanned files.
 
 Workspace storage defaults to 5 GiB. Reservation and quota changes serialize on the workspace row; reserve original size plus bounded preview overhead, then reduce the reservation to the stored bytes. A maximum of thirty outstanding reservations per uploader also bounds abandoned small files. Unsent uploads expire after 24 hours. Cleanup claims records using tenant-bound leases and SKIP LOCKED, removes original and deterministic preview keys outside the transaction, then releases quota exactly once. Failed deletes retry; deleted objects are rechecked daily for seven days to catch uncertain late provider writes. Abandoned upload leases expire after ten minutes, beyond the upload deadline; deletion has a five-minute grace. Staging directories left by a process crash are swept after 24 hours. Back up metadata and objects together. Changing providers does not migrate existing objects or reroute cleanup for another provider.
 
@@ -381,7 +383,7 @@ Open [the app](http://localhost:3000), create an account, then open [the local i
 
 Live email supports a temporary personal Gmail sender and Resend for a verified domain. Set the following **server-only** values in the API environment (the root `.env` for local development):
 
-- `EMAIL_PROVIDER`: `mailpit` locally, or `gmail` or `resend` for live sending. An unset value defaults to `resend` for existing deployments.
+- `EMAIL_PROVIDER`: `mailpit` locally, or `gmail` or `resend` for live sending. Vercel's deployment entry points default to Gmail; the generic email factory retains its Resend fallback for existing deployments.
 - `GMAIL_USER` and `GMAIL_APP_PASSWORD`: for Gmail, your personal Gmail address and its Google app password. The normal Google account password is not supported.
 - `RESEND_API_KEY`: for Resend, a sending-enabled key from the approved account/integration.
 - `EMAIL_FROM`: for Gmail, must match `GMAIL_USER` and defaults to `Orbit <GMAIL_USER>`; for Resend, use an address on a domain verified in that account.
@@ -473,8 +475,7 @@ Configure the root `.env` from `.env.example`:
 
 - `EVE_RUNTIME_URL`: trusted operator-controlled runtime URL; loopback HTTP is allowed for local development, otherwise use HTTPS.
 - `EVE_SERVICE_TOKEN`: a random secret of at least 32 characters, shared only between the API and runtime. For example, generate one locally with `openssl rand -hex 32`; keep it out of source control and logs.
-- `AGENT_MODEL`: approved Gateway model identifier. The example uses `openai/gpt-6-luna`, verified against the catalog during implementation. Set this for both build and start.
-- `AI_GATEWAY_API_KEY`: server-only model credential, or a supported deployment OIDC credential. No model credential is included in this repository.
+- `GROQ_API_KEY`: server-only Groq credential. The API and runtime default to `groq/openai/gpt-oss-120b`, its single-model allowlist, and conservative input/output reservation rates, so no model-selection variables are needed for this setup. Optional model and pricing overrides are documented in [model configuration](model-configuration.md).
 
 ```sh
 npm run runtime:build

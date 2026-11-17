@@ -19,18 +19,34 @@ try {
   const config = JSON.parse(
     await readFile(new URL('../../vercel.json', import.meta.url), 'utf8'),
   ) as {
-    services: { api: { functions: Record<string, { regions: string[] }> } };
-    daemons: { worker: { instances: Record<string, number> } };
+    services: {
+      api: { functions: Record<string, { regions: string[] }> };
+      worker: {
+        functions: Record<
+          string,
+          { regions: string[]; experimentalTriggers: { type: string; topic: string }[] }
+        >;
+      };
+    };
+    daemons?: unknown;
   };
   const apiRegions = [
     ...new Set(Object.values(config.services.api.functions).flatMap((entry) => entry.regions)),
   ].sort();
-  const workerRegions = Object.entries(config.daemons.worker.instances)
-    .filter(([, count]) => count > 0)
-    .map(([region]) => region)
-    .sort();
+  const workerRegions = [
+    ...new Set(Object.values(config.services.worker.functions).flatMap((entry) => entry.regions)),
+  ].sort();
   if (!apiRegions.length || JSON.stringify(apiRegions) !== JSON.stringify(workerRegions))
     issues.add('API and worker hosting regions must match in vercel.json');
+  if (config.daemons) issues.add('On-demand deployment must not reserve an always-running daemon');
+  if (
+    !Object.values(config.services.worker.functions).some((entry) =>
+      entry.experimentalTriggers.some(
+        (trigger) => trigger.type === 'queue/v2beta' && trigger.topic === 'orbit-background-v1',
+      ),
+    )
+  )
+    issues.add('The background worker must have its private queue trigger');
 } catch {
   issues.add('vercel.json must define valid API and worker regions');
 }

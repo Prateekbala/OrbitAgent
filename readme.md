@@ -24,7 +24,7 @@ Built for engineering, product, design, and operations teams that want the discu
 
 ## Try Orbit locally
 
-Requires Node.js 24.15 or later, npm 12.2.1, and Docker with Docker Compose.
+Requires Node.js 24 LTS (24.15 or later), npm 12.2.1, and Docker with Docker Compose.
 
 ```sh
 npm ci
@@ -40,6 +40,8 @@ Stop the local services with `npm run local:down`. Your workspace data is preser
 ## Learn more
 
 - [Local setup](docs/local-development.md)
+- [Deploy on Vercel with Supabase](docs/vercel-supabase.md)
+- [Configure Groq models](docs/model-configuration.md)
 - [Agents and execution controls](docs/agent-execution.md)
 - [Developer platform](docs/developer/README.md)
 - [Implementation and availability](docs/implementation.md)

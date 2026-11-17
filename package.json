@@ -14,7 +14,9 @@
     "undici@8.10.2": "8.12.2",
     "@expo/cli": {
       "zod": "4.6.7"
-    }
+    },
+    "glob@>=9 <14.0.2": "14.0.6",
+    "minimatch@>=7 <11.0.1": "11.0.8"
   },
   "scripts": {
     "dev": "concurrently -k -n api,web 'npm run dev -w @ao/api' 'npm run dev -w @ao/web'",
@@ -46,7 +48,7 @@
     "ops:restore-drill": "node --import tsx tests/operations/restore-drill.ts",
     "ops:test": "node --test tests/operations/*.test.mjs",
     "lint:unused": "knip --treat-config-hints-as-errors",
-    "vercel:install": "npx --yes npm@12.2.1 ci --ignore-scripts --workspace @ao/web --workspace @ao/api --workspace @ao/contracts --workspace @ao/database --workspace @ao/models --include-workspace-root",
+    "vercel:install": "npx --yes npm@12.2.1 ci --ignore-scripts --workspace @ao/web --workspace @ao/api --workspace @ao/background --workspace @ao/contracts --workspace @ao/database --workspace @ao/models --include-workspace-root",
     "deploy:check": "node --env-file-if-exists=.env.vercel.local --import tsx scripts/deployment/check.ts",
     "deploy:keys": "node scripts/deployment/generate-keys.mjs",
     "deploy:migrate": "node --env-file-if-exists=.env.vercel.local --env-file-if-exists=.env.vercel-migration.local --import tsx scripts/deployment/migrate.ts",

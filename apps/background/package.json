@@ -1,0 +1,16 @@
+{
+  "name": "@ao/background",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ao/api": "*",
+    "@vercel/queue": "^0.11.0"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

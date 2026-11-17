@@ -59,13 +59,8 @@ export function deploymentEnvironment(role: DeploymentRole, source: Partial<Node
     issues.push(
       'Use DATABASE_URL alone or separate API_DATABASE_URL and WORKER_DATABASE_URL values',
     );
-  if (role === 'worker' && env.VERCEL_ENV && env.VERCEL_ENV !== 'production')
-    issues.push(
-      'The worker must use the production environment; Vercel previews do not run daemons',
-    );
-
   const poolKey = role === 'api' ? 'API_DATABASE_POOL_MAX' : 'WORKER_DATABASE_POOL_MAX';
-  const poolSize = Number(env[poolKey] || (role === 'api' ? 1 : 5));
+  const poolSize = Number(env[poolKey] || 1);
   if (!Number.isInteger(poolSize) || poolSize < 1 || poolSize > 50)
     issues.push(`${poolKey} must be an integer from 1 to 50`);
   if (env.DATABASE_CA_CERT_BASE64) {
@@ -228,6 +223,7 @@ export function deploymentEnvironment(role: DeploymentRole, source: Partial<Node
   delete env.WORKER_DATABASE_URL;
   env.DATABASE_POOL_MAX = String(poolSize);
   env.PROCESS_ROLE = role;
+  env.BACKGROUND_MODE = 'on-demand';
   env.FILE_STAGING_DIRECTORY = '/tmp/orbit-uploads';
   env.API_HOST = '0.0.0.0';
   env.API_PORT = env.PORT || '3000';

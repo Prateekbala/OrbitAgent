@@ -13,7 +13,6 @@ const suffix = randomUUID().slice(0, 8);
 const network = `orbit-release-${suffix}`;
 const databaseNetwork = `${network}-host`;
 const postgres = `orbit-release-db-${suffix}`;
-const worker = `orbit-release-worker-${suffix}`;
 const api = `orbit-release-api-${suffix}`;
 const setup = `orbit-release-setup-${suffix}`;
 const image = `orbit-release-check:${suffix}`;
@@ -71,7 +70,7 @@ try {
     throw new Error('Unknown verification option.');
   await docker(['info', '--format', '{{.ServerVersion}}']);
   stage = 'production image build';
-  console.log('Building the production worker image for isolated verification.');
+  console.log('Building the production API image for isolated verification.');
   await docker(['build', '--platform', 'linux/amd64', '-f', 'Dockerfile.vercel', '-t', image, '.']);
   stage = 'disposable PostgreSQL and TLS setup';
   await run('openssl', [
@@ -190,7 +189,7 @@ try {
   const sharedBootstrap = bootstrap.map((value) => (value === bootstrapEnv ? sharedEnv : value));
   await docker(sharedBootstrap);
   await docker(sharedBootstrap);
-  stage = 'production API and worker startup';
+  stage = 'production API startup';
   console.log(
     'Verified migrations, repeatable runtime-login setup and certificate-verified database connections.',
   );
@@ -211,7 +210,51 @@ try {
     VERCEL: '1',
     VERCEL_ENV: 'production',
   });
-  for (const name of [worker, api]) {
+  stage = 'private on-demand worker bootstrap';
+  await docker([
+    'run',
+    '--rm',
+    '--network',
+    network,
+    '--read-only',
+    '--tmpfs',
+    '/tmp:uid=1000,gid=1000,mode=0700',
+    '--cap-drop',
+    'ALL',
+    '--security-opt',
+    'no-new-privileges:true',
+    '--env-file',
+    runtimeEnv,
+    '--entrypoint',
+    'node',
+    image,
+    '--import',
+    'tsx',
+    '--input-type=module',
+    '-e',
+    `
+      const {createApplication}=await import('./apps/api/src/bootstrap.ts');
+      const {deploymentEnvironment}=await import('./apps/api/src/deployment/environment.ts');
+      const {dispatcherScope}=await import('@ao/database');
+      const messages=[];
+      const {app,db,background}=await createApplication(deploymentEnvironment('worker',process.env),{
+        backgroundPublisher:{async publish(message){messages.push(message);}}
+      });
+      try {
+        if(app.server.listening||!background) throw new Error('Worker must be on demand and private');
+        await background.publish();
+        const message=messages.find(message=>message.worker==='email');
+        if(!message||messages.length<20) throw new Error('Worker registry was not initialized');
+        await background.run(message);
+        const [row]=await dispatcherScope(()=>db.query("SELECT last_completed_at FROM background_schedules WHERE worker='email'"));
+        if(!row?.last_completed_at) throw new Error('Worker did not complete its bounded tick');
+      } finally {await app.close();await db.close();}
+    `,
+  ]);
+  console.log(
+    'Verified the production worker starts without a listener or polling loop and completes an on-demand tick.',
+  );
+  for (const name of [api]) {
     const args = [
       'run',
       '-d',
@@ -229,34 +272,42 @@ try {
       '--env-file',
       runtimeEnv,
     ];
-    if (name === api)
-      args.push('--entrypoint', 'node', image, '--import', 'tsx', 'apps/api/src/vercel.ts');
-    else args.push(image);
+    args.push(image);
     await docker(args);
-    await healthy(name, name === api ? 3000 : 8081);
+    await healthy(name, 3000);
     if ((await docker(['exec', name, 'id', '-u'])) === '0')
       throw new Error('Application containers must not run as root.');
   }
+  const port = await docker([
+    'inspect',
+    '--format',
+    '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).HostPort}}',
+    postgres,
+  ]);
+  const testEnvironment = {
+    ...process.env,
+    TEST_DATABASE_URL: `postgresql://postgres:${password}@127.0.0.1:${port}/postgres?sslmode=verify-full`,
+    TEST_DATABASE_CA_CERT_BASE64: ca,
+  };
+  stage = 'PostgreSQL background durability tests';
+  await run(
+    process.execPath,
+    [join(root, 'node_modules/vitest/vitest.mjs'), 'run', 'test/background.test.ts'],
+    {
+      cwd: join(root, 'apps/api'),
+      env: testEnvironment,
+    },
+  );
   if (!process.argv.includes('--skip-browser')) {
     stage = 'PostgreSQL browser flow';
-    const port = await docker([
-      'inspect',
-      '--format',
-      '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).HostPort}}',
-      postgres,
-    ]);
     console.log(
       'Testing the browser signup-to-approval flow against isolated PostgreSQL with verified TLS.',
     );
     await run(process.execPath, ['scripts/verification/release-flow.mjs'], {
-      env: {
-        ...process.env,
-        TEST_DATABASE_URL: `postgresql://postgres:${password}@127.0.0.1:${port}/postgres?sslmode=verify-full`,
-        TEST_DATABASE_CA_CERT_BASE64: ca,
-      },
+      env: testEnvironment,
     });
   }
-  for (const name of [worker, api]) {
+  for (const name of [api]) {
     stage = 'graceful shutdown';
     await docker(['stop', '-t', '20', name]);
     if ((await docker(['inspect', '--format', '{{.State.ExitCode}}', name])) !== '0')
@@ -269,7 +320,7 @@ try {
       restrictedRuntimeLogins: true,
       sharedConnectionRLS: true,
       nonRootReadOnlyContainers: true,
-      privateWorkerHealth: true,
+      onDemandBackground: true,
       gracefulShutdown: true,
       browserFlow: !process.argv.includes('--skip-browser'),
       liveProviders: false,
@@ -297,7 +348,7 @@ try {
 } finally {
   process.off('SIGINT', interrupt);
   process.off('SIGTERM', interrupt);
-  for (const name of [setup, worker, api, postgres])
+  for (const name of [setup, api, postgres])
     await execute('docker', ['rm', '-fv', name], { timeout: 15000 }).catch(() => {});
   await execute('docker', ['network', 'rm', network], { timeout: 15000 }).catch(() => {});
   await execute('docker', ['network', 'rm', databaseNetwork], { timeout: 15000 }).catch(() => {});

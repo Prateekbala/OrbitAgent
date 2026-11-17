@@ -282,6 +282,6 @@ describe('transaction and reference integrity', () => {
       (await db.query('SELECT version FROM schema_migrations ORDER BY version')).map(
         (row) => row.version,
       ),
-    ).toEqual(Array.from({ length: 78 }, (_, index) => index + 1));
+    ).toEqual(Array.from({ length: 79 }, (_, index) => index + 1));
   });
 });

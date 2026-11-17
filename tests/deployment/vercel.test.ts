@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify, parseEnv } from 'node:util';
-import { mkdtemp, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +10,6 @@ import {
   deploymentEnvironment,
   DeploymentConfigurationError,
 } from '../../apps/api/src/deployment/environment.js';
-import { startWorkerHealth } from '../../apps/api/src/deployment/worker-health.js';
 import { configuredEmail } from '../../apps/api/src/email/service.js';
 import {
   databaseConfiguration,
@@ -84,7 +83,7 @@ test('minimal deployment credentials enable the selected providers with bounded 
         outputMicrosPerMillion: 600000,
       },
     });
-    assert.equal(env.DATABASE_POOL_MAX, role === 'api' ? '1' : '5');
+    assert.equal(env.DATABASE_POOL_MAX, '1');
     assert.equal(env.DATABASE_URL, minimalFixture.DATABASE_URL);
     assert.equal(env.DATABASE_CONNECTION_MODE, 'shared');
     const email = configuredEmail(env, env.WEB_ORIGIN!);
@@ -141,9 +140,9 @@ test('API and worker select separate credentials and reject privileged secrets',
         return true;
       },
     );
-  assert.throws(
-    () => deploymentEnvironment('worker', { ...runtimeFixture, VERCEL_ENV: 'preview' }),
-    /previews/,
+  assert.equal(
+    deploymentEnvironment('worker', { ...runtimeFixture, VERCEL_ENV: 'preview' }).BACKGROUND_MODE,
+    'on-demand',
   );
 });
 
@@ -238,7 +237,7 @@ test('deployment commands and referenced setup artifacts all exist', async () =>
   for (const path of [
     'Dockerfile.vercel',
     'apps/api/src/vercel.ts',
-    'apps/api/src/vercel-worker.ts',
+    'apps/background/api/worker.ts',
     'scripts/verification/postgres-release.mjs',
     'scripts/verification/release-flow.mjs',
   ])
@@ -259,9 +258,19 @@ test('service routing strips the API prefix and keeps the worker private', async
   );
   assert.deepEqual(
     config.services.api.functions['src/vercel.ts'].regions,
-    Object.keys(config.daemons.worker.instances),
+    config.services.worker.functions['api/worker.ts'].regions,
   );
-  assert.equal(config.daemons.worker.entrypoint, 'Dockerfile.vercel');
+  assert.equal(config.daemons, undefined);
+  const worker = config.services.worker.functions['api/worker.ts'];
+  assert.equal(worker.maxDuration, 300);
+  assert.deepEqual(worker.experimentalTriggers, [
+    {
+      type: 'queue/v2beta',
+      topic: 'orbit-background-v1',
+      retryAfterSeconds: 30,
+      maxConcurrency: 2,
+    },
+  ]);
 });
 
 test('configuration checker succeeds without network access and never prints credentials', async () => {
@@ -331,24 +340,16 @@ test('generated encryption keys are private and cannot overwrite existing deploy
   }
 });
 
-test('private worker liveness fails on stale or missing heartbeats', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'orbit-worker-probe-'));
-  const heartbeat = join(directory, 'heartbeat');
-  await writeFile(heartbeat, 'ready');
-  const health = await startWorkerHealth(0, heartbeat);
-  try {
-    const address = health.server.address();
-    assert.ok(address && typeof address !== 'string');
-    const url = `http://127.0.0.1:${address.port}`;
-    assert.equal((await fetch(url + '/health')).status, 200);
-    assert.equal((await fetch(url + '/v1/runs')).status, 404);
-    const stale = new Date(Date.now() - 60000);
-    await utimes(heartbeat, stale, stale);
-    assert.equal((await fetch(url + '/health')).status, 503);
-    await rm(heartbeat);
-    assert.equal((await fetch(url + '/health')).status, 503);
-  } finally {
-    await health.close();
-    await rm(directory, { recursive: true, force: true });
+test('Vercel runs only bounded request-driven processes with a private queue consumer', async () => {
+  const entry = await readFile(
+    new URL('../../apps/background/api/worker.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(entry, /handleNodeCallback/);
+  assert.match(entry, /visibilityTimeoutSeconds: 300/);
+  for (const role of ['api', 'worker'] as const) {
+    const env = deploymentEnvironment(role, minimalFixture);
+    assert.equal(env.BACKGROUND_MODE, 'on-demand');
+    assert.equal(env.DATABASE_POOL_MAX, '1');
   }
 });

@@ -13,31 +13,61 @@
       "entrypoint": "src/vercel.ts",
       "installCommand": "cd ../.. && npm run vercel:install",
       "functions": {
-        "src/vercel.ts": { "maxDuration": 300, "regions": ["bom1"] }
+        "src/vercel.ts": {
+          "maxDuration": 300,
+          "regions": ["bom1"]
+        }
       },
-      "rewrites": [{ "source": "/api/:path*", "destination": "/:path*" }]
+      "rewrites": [
+        {
+          "source": "/api/:path*",
+          "destination": "/:path*"
+        }
+      ]
+    },
+    "worker": {
+      "root": "apps/background",
+      "installCommand": "cd ../.. && npm run vercel:install",
+      "functions": {
+        "api/worker.ts": {
+          "maxDuration": 300,
+          "regions": ["bom1"],
+          "experimentalTriggers": [
+            {
+              "type": "queue/v2beta",
+              "topic": "orbit-background-v1",
+              "retryAfterSeconds": 30,
+              "maxConcurrency": 2
+            }
+          ]
+        }
+      }
     }
   },
   "rewrites": [
-    { "source": "/api/internal/:path*", "destination": { "service": "web" } },
-    { "source": "/api/:path*", "destination": { "service": "api" } },
-    { "source": "/.well-known/:path*", "destination": { "service": "api" } },
-    { "source": "/:path*", "destination": { "service": "web" } }
-  ],
-  "daemons": {
-    "worker": {
-      "root": ".",
-      "entrypoint": "Dockerfile.vercel",
-      "instances": { "bom1": 1 },
-      "resources": { "requests": { "memory": "2Gi" } },
-      "terminationGracePeriodSeconds": 600,
-      "livenessProbe": {
-        "httpGet": { "path": "/health", "port": 8081 },
-        "initialDelaySeconds": 30,
-        "periodSeconds": 15,
-        "timeoutSeconds": 3,
-        "failureThreshold": 3
+    {
+      "source": "/api/internal/:path*",
+      "destination": {
+        "service": "web"
+      }
+    },
+    {
+      "source": "/api/:path*",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/.well-known/:path*",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/:path*",
+      "destination": {
+        "service": "web"
       }
     }
-  }
+  ]
 }
