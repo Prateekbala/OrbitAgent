@@ -244,13 +244,17 @@ test('deployment commands and referenced setup artifacts all exist', async () =>
     assert.ok((await stat(new URL('../../' + path, import.meta.url))).isFile());
 });
 
-test('service routing strips the API prefix and keeps the worker private', async () => {
+test('service routing serves the landing page, strips the API prefix, and keeps the worker private', async () => {
   const config = JSON.parse(await readFile(new URL('../../vercel.json', import.meta.url), 'utf8'));
   assert.equal(config.services.api.entrypoint, 'src/vercel.ts');
   assert.deepEqual(config.services.api.rewrites, [
     { source: '/api/:path*', destination: '/:path*' },
   ]);
   assert.equal(config.rewrites[0].source, '/api/internal/:path*');
+  assert.deepEqual(config.rewrites.at(-1), {
+    source: '/(.*)',
+    destination: { service: 'web' },
+  });
   assert.ok(
     !config.rewrites.some(
       (entry: { destination: { service: string } }) => entry.destination.service === 'worker',
