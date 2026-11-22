@@ -106,6 +106,18 @@ test('phone layout has no horizontal overflow, supports the menu and reduced-mot
   await page.keyboard.press('Escape');
   await expect(menu).toBeFocused();
   await expect(menu).toHaveAttribute('aria-expanded', 'false');
+
+  const footer = page.getByRole('contentinfo');
+  const artwork = footer.locator('img');
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect(artwork).toHaveAttribute('src', '/landing/footer-landscape.webp');
+  await expect(artwork).toHaveJSProperty('naturalWidth', 2048);
+  await expect(artwork.locator('..')).toHaveCSS('transform', 'none');
+  await expect(footer.getByRole('link', { name: 'Get started with Orbit' })).toHaveAttribute(
+    'href',
+    '/sign-up',
+  );
+  await footer.screenshot({ path: test.info().outputPath('footer-mobile.png') });
 });
 
 test('old message permalinks preserve their audience and message parameters', async ({ page }) => {
@@ -132,6 +144,9 @@ test('smooth navigation and motion preserve the original landscape and respect l
     'data-motion-entered',
     'true',
   );
+  await page.evaluate(() => window.scrollTo({ top: 300, behavior: 'instant' }));
+  await expect(video).not.toHaveCSS('transform', 'none');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 
   await page
     .getByRole('navigation', { name: 'Main navigation', exact: true })
@@ -163,6 +178,10 @@ test('smooth navigation and motion preserve the original landscape and respect l
   await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto');
   await expect(video).toHaveJSProperty('paused', true);
   await expect(video).toHaveCSS('transform', 'none');
+  const footer = page.getByRole('contentinfo');
+  await footer.scrollIntoViewIfNeeded();
+  await expect(footer.locator('img')).toHaveJSProperty('naturalWidth', 2048);
+  await footer.screenshot({ path: test.info().outputPath('footer-desktop.png') });
 });
 
 test('the original hero and signup links remain available without JavaScript', async ({
@@ -179,6 +198,9 @@ test('the original hero and signup links remain available without JavaScript', a
       page.getByRole('banner').getByRole('link', { name: 'Get started', exact: true }),
     ).toHaveAttribute('href', '/sign-up');
     await expect(page.locator('video')).not.toHaveAttribute('src');
+    const artwork = page.getByRole('contentinfo').locator('img');
+    await expect(artwork).toHaveAttribute('src', '/landing/footer-landscape.webp');
+    await expect(artwork).toHaveJSProperty('naturalWidth', 2048);
   } finally {
     await context.close();
   }

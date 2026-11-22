@@ -28,7 +28,14 @@ import sections from './sections.module.css';
 import { IntegrationShowcase } from './integration-showcase';
 import { PricingSection } from './pricing-section';
 import { LandingFooter } from './landing-footer';
-import { LandingMotion, MotionLink, Reveal, RevealSection } from './landing-motion';
+import {
+  LandingMotion,
+  MotionLink,
+  ParallaxArtwork,
+  Reveal,
+  RevealSection,
+  ScrollProgress,
+} from './landing-motion';
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -166,6 +173,7 @@ export function LandingPage() {
   return (
     <LandingMotion>
       <div className={styles.page}>
+        <ScrollProgress />
         <a className={styles.skipLink} href="#landing-main">
           Skip to content
         </a>
@@ -267,6 +275,10 @@ export function LandingPage() {
             <Reveal className={styles.signalLandscape}>
               <ProjectSignalPreview />
               <span className={styles.previewCaption}>Illustrative product preview</span>
+              <ParallaxArtwork
+                className={styles.previewScenery}
+                artworkClassName={styles.previewSceneryImage}
+              />
             </Reveal>
           </section>
 

@@ -24,6 +24,15 @@
   color: inherit;
   text-decoration: none;
 }
+.scrollProgress {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 3px;
+  z-index: 10;
+  background: linear-gradient(90deg, #f99d58, var(--landing-coral));
+  transform-origin: left;
+  pointer-events: none;
+}
 .page button {
   font-family: inherit;
 }
@@ -158,14 +167,18 @@
   overflow: clip;
   background: #e3e3e3 url('/landing/landscape.png') center 63% / cover;
 }
-.heroVideo {
+.heroMedia {
   position: absolute;
   inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+.heroVideo {
+  display: block;
   height: 100%;
   width: 100%;
   object-fit: cover;
   object-position: center;
-  z-index: -2;
 }
 .hero::after {
   content: '';
@@ -2100,7 +2113,20 @@
   padding: 64px 34px;
   overflow: hidden;
   isolation: isolate;
-  background: #c1d3d2 url('/landing/landscape.png') center 75% / cover;
+  background: #c1d3d2;
+  border-radius: 14px;
+}
+.previewScenery {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: clip;
+  pointer-events: none;
+}
+.previewSceneryImage {
+  position: absolute;
+  inset: -48px 0 0;
+  background: url('/landing/landscape.png') center 75% / cover;
 }
 .signalLandscape::before {
   content: '';
@@ -2222,8 +2248,10 @@
   margin-top: 48px;
   min-height: 620px;
   padding: 56px 42px;
-  background: #b7cfd1 url('/landing/landscape.png') center 75% / cover;
+  background: #b7cfd1;
   position: relative;
+  isolation: isolate;
+  border-radius: 14px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
@@ -2653,14 +2681,18 @@
 .footerLandscape {
   position: absolute;
   inset: 0;
-  z-index: -1;
   pointer-events: none;
+}
+.footerImageLayer {
+  position: absolute;
+  inset: -48px 0 0;
 }
 .footerArtwork {
   object-fit: cover;
   object-position: center bottom;
 }
 .footerInner {
+  position: relative;
   max-width: 1280px;
   margin: 0 auto;
   padding: clamp(78px, 6.4vw, 128px) 40px 360px;
@@ -2683,13 +2715,22 @@
 .footerCta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
+  gap: 12px;
+  min-height: 48px;
   margin-top: 24px;
-  border-bottom: 1px solid #c3cfc5;
+  padding: 0 16px;
+  border: 1px solid #1c2822;
+  border-radius: 9px;
+  background: #1c2822;
   font-size: 17px;
   line-height: 1.4;
   letter-spacing: -0.02em;
+}
+.footerIntro .footerCta {
+  color: #ffffff;
+}
+.footerIntro .footerCta:hover {
+  background: #2d4438;
 }
 .footerLinks {
   display: grid;
@@ -2720,11 +2761,8 @@
   line-height: 1.45;
   letter-spacing: -0.02em;
 }
-.footerLinks a:hover,
-.footerCta:hover {
-  color: #275b43;
-}
 .footerLinks a:hover {
+  color: #275b43;
   text-decoration: underline;
   text-underline-offset: 5px;
   text-decoration-thickness: 1px;
@@ -2735,6 +2773,11 @@
   }
   .footerCta:hover > svg {
     translate: 2px -2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scrollProgress {
+    display: none;
   }
 }
 @media (max-width: 1000px) {
@@ -2761,10 +2804,10 @@
 }
 @media (max-width: 640px) {
   .footer {
-    min-height: 760px;
+    min-height: 670px;
   }
   .footerInner {
-    padding: 56px 22px 300px;
+    padding: 56px 22px 245px;
   }
   .footerTop {
     gap: 36px;
@@ -2793,6 +2836,6 @@
     line-height: 1.4;
   }
   .footerLandscape {
-    height: 320px;
+    height: 340px;
   }
 }

@@ -96,11 +96,11 @@ export function LandingHeader() {
 }
 
 export function HeroLandscape() {
+  const frame = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLVideoElement>(null);
   const reduced = useLandingReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 32]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.04]);
+  const { scrollYProgress } = useScroll({ target: frame, offset: ['start start', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 1], [0, 144]);
   const [paused, setPaused] = useState(false);
   const [available, setAvailable] = useState(false);
   useEffect(() => {
@@ -137,25 +137,26 @@ export function HeroLandscape() {
   }, [paused]);
   return (
     <>
-      <m.video
-        ref={ref}
-        className={styles.heroVideo}
-        poster="/landing/landscape.png"
-        muted
-        loop
-        playsInline
-        preload="none"
-        aria-hidden="true"
-        tabIndex={-1}
-        style={{ y: reduced || paused ? 0 : y, scale: reduced || paused ? 1 : scale }}
-      />
+      <div ref={frame} className={styles.heroMedia} aria-hidden="true">
+        <m.video
+          ref={ref}
+          className={styles.heroVideo}
+          poster="/landing/landscape.png"
+          muted
+          loop
+          playsInline
+          preload="none"
+          tabIndex={-1}
+          style={{ y: reduced || paused ? 0 : y }}
+        />
+      </div>
       {available && (
         <Button
           variant="ghost"
           type="button"
           className={styles.motionToggle}
           aria-label={paused ? 'Play background animation' : 'Pause background animation'}
-          onClick={() => setPaused(!paused)}
+          onClick={() => setPaused((value) => !value)}
         >
           {paused ? <Play size={14} /> : <Pause size={14} />}
         </Button>

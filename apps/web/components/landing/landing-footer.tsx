@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
-import { Reveal } from './landing-motion';
+import { MotionLink, ParallaxArtwork, Reveal } from './landing-motion';
 import styles from './landing.module.css';
 
 const navigation = [
@@ -36,15 +36,18 @@ export function LandingFooter() {
     <>
       <div className={styles.hatch} aria-hidden="true" />
       <footer className={styles.footer} aria-labelledby="footer-title">
-        <div className={styles.footerLandscape} aria-hidden="true">
+        <ParallaxArtwork
+          className={styles.footerLandscape}
+          artworkClassName={styles.footerImageLayer}
+        >
           <Image
             src="/landing/footer-landscape.webp"
             alt=""
             fill
-            sizes="100vw"
+            unoptimized
             className={styles.footerArtwork}
           />
-        </div>
+        </ParallaxArtwork>
         <div className={styles.footerInner}>
           <Reveal sequence className={styles.footerTop}>
             <div className={styles.footerIntro}>
@@ -53,10 +56,10 @@ export function LandingFooter() {
                 <br />
                 More moving forward.
               </h2>
-              <a className={styles.footerCta} href="/sign-up">
+              <MotionLink className={styles.footerCta} href="/sign-up">
                 Get started with Orbit
                 <ArrowUpRight size={19} aria-hidden="true" />
-              </a>
+              </MotionLink>
             </div>
             <nav className={styles.footerLinks} aria-label="Footer navigation">
               {navigation.map(({ title, links }) => (

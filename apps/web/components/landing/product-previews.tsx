@@ -15,7 +15,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import styles from './landing.module.css';
-import { Reveal } from './landing-motion';
+import { ParallaxArtwork, Reveal } from './landing-motion';
 
 function PreviewWindow({
   title,
@@ -348,6 +348,10 @@ export function ConnectedWorkPreview() {
         </div>
       </Reveal>
       <span className={styles.previewCaption}>Illustrative product preview</span>
+      <ParallaxArtwork
+        className={styles.previewScenery}
+        artworkClassName={styles.previewSceneryImage}
+      />
     </Reveal>
   );
 }
