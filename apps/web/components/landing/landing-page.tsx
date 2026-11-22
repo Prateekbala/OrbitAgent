@@ -32,9 +32,11 @@ import {
   LandingMotion,
   MotionLink,
   ParallaxArtwork,
+  ParallaxPanel,
   Reveal,
   RevealSection,
   ScrollProgress,
+  WrittenText,
 } from './landing-motion';
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -245,7 +247,7 @@ export function LandingPage() {
               <h2>
                 The work starts in conversation.
                 <br />
-                Keep the context with it.
+                <WrittenText text="Keep the context with it." />
               </h2>
             </Reveal>
             <Reveal className={styles.problemColumns}>
@@ -292,7 +294,7 @@ export function LandingPage() {
               <h2>
                 Everything your team discussed.
                 <br />
-                Connected to what happens next.
+                <WrittenText text="Connected to what happens next." />
               </h2>
               <p>
                 A message becomes a decision. A decision shapes the next task. Orbit keeps the
@@ -341,9 +343,9 @@ export function LandingPage() {
             <h2>
               Bring the context.
               <br />
-              Keep the work moving.
+              <WrittenText text="Keep the work moving." />
             </h2>
-            <div className={styles.workflowGrid}>
+            <Reveal sequence className={styles.workflowGrid}>
               {workflow.map(([title, description], index) => (
                 <article key={title}>
                   <span>0{index + 1}</span>
@@ -351,7 +353,7 @@ export function LandingPage() {
                   <p>{description}</p>
                 </article>
               ))}
-            </div>
+            </Reveal>
           </RevealSection>
 
           <section className={sections.featureSection} id="features">
@@ -361,7 +363,7 @@ export function LandingPage() {
                 <h2>
                   One place for the work.
                   <br />
-                  And everything behind it.
+                  <WrittenText text="And everything behind it." />
                 </h2>
                 <p>
                   The conversation, the next step, and the thinking that connects them. Give people
@@ -472,7 +474,8 @@ export function LandingPage() {
               <Label>From Conversation To Completion</Label>
               <h2>
                 Good ideas deserve
-                <br />a clear next step.
+                <br />
+                <WrittenText text="a clear next step." />
               </h2>
               <p>
                 Turn a discussion into a task with an owner, a deadline, and a clear definition of
@@ -482,40 +485,42 @@ export function LandingPage() {
                 Explore your workspace <ArrowUpRight size={17} />
               </a>
             </div>
-            <Reveal
-              sequence
-              className={styles.taskStack}
-              aria-label="Illustrative project task preview"
-            >
-              <div className={styles.taskStackLabel}>
-                <Layers3 size={16} />
-                Website launch<small>Product preview</small>
-              </div>
-              {[
-                ['Review the launch brief', 'Design review', 'In progress'],
-                ['Resolve accessibility checks', 'Engineering', 'In review'],
-                ['Publish the final release notes', 'Launch', 'Up next'],
-              ].map(([title, label, state], index) => (
-                <div className={styles.taskPreviewCard} key={title}>
-                  <span className={styles.taskCheck}>
-                    {index === 1 ? <Check size={16} /> : <span />}
-                  </span>
-                  <div>
-                    <small>{label}</small>
-                    <h3>{title}</h3>
-                    <p>
-                      <MessageSquare size={12} />
-                      Linked discussion{' '}
-                      <span>
-                        <CalendarDays size={12} />
-                        Due date
-                      </span>
-                    </p>
-                  </div>
-                  <em>{state}</em>
+            <ParallaxPanel>
+              <Reveal
+                sequence
+                className={styles.taskStack}
+                aria-label="Illustrative project task preview"
+              >
+                <div className={styles.taskStackLabel}>
+                  <Layers3 size={16} />
+                  Website launch<small>Product preview</small>
                 </div>
-              ))}
-            </Reveal>
+                {[
+                  ['Review the launch brief', 'Design review', 'In progress'],
+                  ['Resolve accessibility checks', 'Engineering', 'In review'],
+                  ['Publish the final release notes', 'Launch', 'Up next'],
+                ].map(([title, label, state], index) => (
+                  <div className={styles.taskPreviewCard} key={title}>
+                    <span className={styles.taskCheck}>
+                      {index === 1 ? <Check size={16} /> : <span />}
+                    </span>
+                    <div>
+                      <small>{label}</small>
+                      <h3>{title}</h3>
+                      <p>
+                        <MessageSquare size={12} />
+                        Linked discussion{' '}
+                        <span>
+                          <CalendarDays size={12} />
+                          Due date
+                        </span>
+                      </p>
+                    </div>
+                    <em>{state}</em>
+                  </div>
+                ))}
+              </Reveal>
+            </ParallaxPanel>
           </RevealSection>
 
           <div className={styles.hatch} aria-hidden="true" />
@@ -526,7 +531,7 @@ export function LandingPage() {
                 <h2>
                   Your tools, connected.
                   <br />
-                  Your context, together.
+                  <WrittenText text="Your context, together." />
                 </h2>
               </div>
               <p>
@@ -555,7 +560,7 @@ export function LandingPage() {
             <h2>
               AI that works with your team.
               <br />
-              On your terms.
+              <WrittenText text="On your terms." />
             </h2>
             <Reveal sequence className={styles.principleGrid}>
               <article>

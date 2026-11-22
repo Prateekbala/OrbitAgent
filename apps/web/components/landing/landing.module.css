@@ -33,6 +33,76 @@
   transform-origin: left;
   pointer-events: none;
 }
+.parallaxPanel {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.writtenAccessible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  user-select: none;
+}
+.writtenWord {
+  white-space: nowrap;
+}
+.previewQuestion .writtenText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-ink-reveal='headline'] .writtenGlyph {
+    animation: settleInk 380ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--ink-order) * 19ms) both;
+  }
+  [data-ink-reveal='typewriter'] .writtenGlyph {
+    position: relative;
+    animation: typeInk 1ms step-end calc(var(--ink-order) * 29ms) both;
+  }
+  [data-ink-reveal='typewriter'] .writtenGlyph::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 0.1em;
+    bottom: 0.05em;
+    width: 1px;
+    opacity: 0;
+    background: var(--landing-coral);
+    animation: typeCaret 29ms step-end calc(var(--ink-order) * 29ms) forwards;
+  }
+}
+@keyframes settleInk {
+  from {
+    opacity: 0.16;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes typeInk {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes typeCaret {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 .page button {
   font-family: inherit;
 }
@@ -479,8 +549,37 @@
   margin-top: 48px;
 }
 .workflowGrid article {
+  position: relative;
   border-top: 1px solid #a7a7a7;
   padding-top: 18px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .workflowGrid[data-motion-entered='true'] article::before {
+    content: '';
+    position: absolute;
+    inset: -1px 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg, var(--landing-coral), #e5ad82 55%, transparent);
+    transform-origin: left;
+    animation: traceWorkflow 800ms cubic-bezier(0.22, 1, 0.36, 1) var(--workflow-delay, 0ms) both;
+  }
+  .workflowGrid article:nth-child(2) {
+    --workflow-delay: 100ms;
+  }
+  .workflowGrid article:nth-child(3) {
+    --workflow-delay: 200ms;
+  }
+  .workflowGrid article:nth-child(4) {
+    --workflow-delay: 300ms;
+  }
+}
+@keyframes traceWorkflow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 .workflowGrid article > span {
   color: #9c9c9c;
@@ -541,7 +640,10 @@
 }
 .previewLandscape {
   padding: 48px;
-  background: #d0d0d0 url('/landing/landscape.png') center 75% / cover;
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: #d0d0d0;
   min-height: 580px;
   display: flex;
   align-items: center;
@@ -765,7 +867,7 @@
   font-size: 18px;
   max-width: 430px;
 }
-.agentLandscape {
+.agentLandscape .previewSceneryImage {
   background-position: 45% 80%;
 }
 .glassWindow {
@@ -855,7 +957,7 @@
   color: #303030;
   border-radius: 5px;
 }
-.knowledgeLandscape {
+.knowledgeLandscape .previewSceneryImage {
   background-position: 70% 75%;
 }
 .knowledgePreviewBody {
@@ -954,6 +1056,7 @@
   text-underline-offset: 4px;
 }
 .taskStack {
+  width: 100%;
   background: #f3f3f3;
   border: 1px solid #e8e8e8;
   padding: 30px 24px 36px;

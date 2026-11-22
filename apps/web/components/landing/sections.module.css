@@ -155,6 +155,7 @@
 }
 .connectionScene {
   position: relative;
+  height: 100%;
   min-height: 690px;
   overflow: hidden;
   background-color: #f8f9f8;
@@ -167,6 +168,9 @@
     84px 84px,
     84px 84px;
   border: 1px solid #e8ebe8;
+}
+.connectionStage {
+  min-width: 0;
 }
 .sceneTile {
   position: absolute;
@@ -584,6 +588,17 @@
   border-radius: 10px;
   padding: 30px 28px;
   position: relative;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .planCard {
+    transition:
+      translate 260ms ease,
+      box-shadow 260ms ease;
+  }
+  .planCard:hover {
+    translate: 0 -5px;
+    box-shadow: 0 18px 38px #20372a12;
+  }
 }
 .featuredPlan {
   border-color: #c7cdbf;

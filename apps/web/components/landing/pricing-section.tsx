@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check, ChevronDown, ShieldCheck } from 'lucide-react';
-import { MotionLink, Reveal, useLandingReducedMotion } from './landing-motion';
+import { MotionLink, Reveal, WrittenText, useLandingReducedMotion } from './landing-motion';
 import { publicPlans, publicPricing } from './pricing-config';
 import styles from './sections.module.css';
 
@@ -22,7 +22,7 @@ export function PricingSection() {
         <h2 id="pricing-title">
           Start with your team.
           <br />
-          Grow into your next chapter.
+          <WrittenText text="Grow into your next chapter." />
         </h2>
         <p>
           Conversations, projects, knowledge, and agents in one shared workspace.

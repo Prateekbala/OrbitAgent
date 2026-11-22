@@ -15,7 +15,35 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import styles from './landing.module.css';
-import { ParallaxArtwork, Reveal } from './landing-motion';
+import { ParallaxArtwork, ParallaxPanel, Reveal, WrittenText } from './landing-motion';
+
+function FeatureScene({
+  children,
+  variant,
+}: {
+  children: React.ReactNode;
+  variant?: 'agent' | 'knowledge';
+}) {
+  const landscape =
+    variant === 'agent'
+      ? styles.agentLandscape
+      : variant === 'knowledge'
+        ? styles.knowledgeLandscape
+        : '';
+  return (
+    <ParallaxPanel
+      className={`${styles.previewLandscape} ${landscape}`}
+      backdrop={
+        <ParallaxArtwork
+          className={styles.previewScenery}
+          artworkClassName={styles.previewSceneryImage}
+        />
+      }
+    >
+      {children}
+    </ParallaxPanel>
+  );
+}
 
 function PreviewWindow({
   title,
@@ -46,7 +74,7 @@ function PreviewWindow({
 
 export function ConversationPreview() {
   return (
-    <div className={styles.previewLandscape}>
+    <FeatureScene>
       <PreviewWindow title="Product launch">
         <div className={styles.chatPreview}>
           <aside className={styles.previewSidebar} aria-hidden="true">
@@ -123,13 +151,13 @@ export function ConversationPreview() {
           </div>
         </div>
       </PreviewWindow>
-    </div>
+    </FeatureScene>
   );
 }
 
 export function AgentPreview() {
   return (
-    <div className={`${styles.previewLandscape} ${styles.agentLandscape}`}>
+    <FeatureScene variant="agent">
       <PreviewWindow title="Agent execution" dark>
         <div className={styles.agentPreviewBody}>
           <span className={styles.previewBadge}>
@@ -170,18 +198,18 @@ export function AgentPreview() {
           </div>
         </div>
       </PreviewWindow>
-    </div>
+    </FeatureScene>
   );
 }
 
 export function KnowledgePreview() {
   return (
-    <div className={`${styles.previewLandscape} ${styles.knowledgeLandscape}`}>
+    <FeatureScene variant="knowledge">
       <PreviewWindow title="Workspace knowledge">
         <div className={styles.knowledgePreviewBody}>
           <div className={styles.previewQuestion}>
             <Search size={18} />
-            <span>What did we decide about the launch?</span>
+            <WrittenText text="What did we decide about the launch?" typewriter />
             <ArrowUpRight size={17} />
           </div>
           <p className={styles.answerLabel}>
@@ -192,7 +220,7 @@ export function KnowledgePreview() {
             The team agreed to finish accessibility checks before publishing. The review task is
             assigned, and the decision is recorded in the launch plan.
           </p>
-          <div className={styles.sourceCards}>
+          <Reveal sequence className={styles.sourceCards}>
             <span>
               <Hash size={17} />
               <strong>product-launch</strong>
@@ -208,13 +236,13 @@ export function KnowledgePreview() {
               <strong>Final review</strong>
               <small>Linked project task</small>
             </span>
-          </div>
+          </Reveal>
           <div className={styles.sourceFoot}>
             <Link2 size={14} /> Sources stay inspectable. Access stays scoped.
           </div>
         </div>
       </PreviewWindow>
-    </div>
+    </FeatureScene>
   );
 }
 

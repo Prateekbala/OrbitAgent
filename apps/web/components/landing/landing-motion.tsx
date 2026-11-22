@@ -18,6 +18,7 @@ import {
   useRef,
   useSyncExternalStore,
   type ComponentPropsWithoutRef,
+  type CSSProperties,
   type ReactNode,
 } from 'react';
 import styles from './landing.module.css';
@@ -89,6 +90,67 @@ export function ParallaxArtwork({
         {children}
       </m.div>
     </div>
+  );
+}
+
+export function ParallaxPanel({
+  children,
+  className,
+  backdrop,
+}: {
+  children: ReactNode;
+  className?: string | undefined;
+  backdrop?: ReactNode;
+}) {
+  const frame = useRef<HTMLDivElement>(null);
+  const reduced = useLandingReducedMotion();
+  const { scrollYProgress } = useScroll({ target: frame, offset: ['start end', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 0.5, 1], [30, 0, -30]);
+
+  return (
+    <div ref={frame} className={className}>
+      {backdrop}
+      <m.div className={styles.parallaxPanel} style={{ y: reduced ? 0 : y }}>
+        {children}
+      </m.div>
+    </div>
+  );
+}
+
+const graphemes = new Intl.Segmenter('en', { granularity: 'grapheme' });
+
+export function WrittenText({ text, typewriter = false }: { text: string; typewriter?: boolean }) {
+  const target = useRef<HTMLSpanElement>(null);
+  const visible = useInView(target, { once: true, amount: 0.55 });
+  const reduced = useLandingReducedMotion();
+  const words = text.split(' ');
+  let index = 0;
+
+  return (
+    <span ref={target} className={styles.writtenText}>
+      <span className={styles.writtenAccessible}>{text}</span>
+      <span
+        aria-hidden="true"
+        data-ink-reveal={visible && !reduced ? (typewriter ? 'typewriter' : 'headline') : undefined}
+      >
+        {words.map((word, wordIndex) => (
+          <span key={wordIndex}>
+            {wordIndex > 0 && ' '}
+            <span className={styles.writtenWord}>
+              {Array.from(graphemes.segment(word), ({ segment }, letterIndex) => (
+                <span
+                  key={letterIndex}
+                  className={styles.writtenGlyph}
+                  style={{ '--ink-order': index++ } as CSSProperties}
+                >
+                  {segment}
+                </span>
+              ))}
+            </span>
+          </span>
+        ))}
+      </span>
+    </span>
   );
 }
 

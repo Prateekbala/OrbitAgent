@@ -174,10 +174,22 @@ test('smooth navigation and motion preserve the original landscape and respect l
     )
     .toBeLessThan(2);
 
+  const knowledge = page.locator('#feature-knowledge');
+  const typed = knowledge.locator('[data-ink-reveal="typewriter"]');
+  await knowledge.locator('[class*="previewQuestion"]').scrollIntoViewIfNeeded();
+  await expect(typed).toHaveCount(1);
+  await expect(typed.locator('span[style]').last()).toHaveCSS('opacity', '1');
+  await expect(knowledge.locator('[class*="parallaxPanel"]')).not.toHaveCSS('transform', 'none');
+  await expect(
+    knowledge.getByRole('heading', { name: 'The launch follows the final design review.' }),
+  ).toBeVisible();
+
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto');
   await expect(video).toHaveJSProperty('paused', true);
   await expect(video).toHaveCSS('transform', 'none');
+  await expect(typed).toHaveCount(0);
+  await expect(knowledge.locator('[class*="parallaxPanel"]')).toHaveCSS('transform', 'none');
   const footer = page.getByRole('contentinfo');
   await footer.scrollIntoViewIfNeeded();
   await expect(footer.locator('img')).toHaveJSProperty('naturalWidth', 2048);
@@ -198,6 +210,9 @@ test('the original hero and signup links remain available without JavaScript', a
       page.getByRole('banner').getByRole('link', { name: 'Get started', exact: true }),
     ).toHaveAttribute('href', '/sign-up');
     await expect(page.locator('video')).not.toHaveAttribute('src');
+    await expect(
+      page.getByRole('heading', { name: 'One place for the work. And everything behind it.' }),
+    ).toBeAttached();
     const artwork = page.getByRole('contentinfo').locator('img');
     await expect(artwork).toHaveAttribute('src', '/landing/footer-landscape.webp');
     await expect(artwork).toHaveJSProperty('naturalWidth', 2048);

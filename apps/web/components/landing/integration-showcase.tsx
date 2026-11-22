@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, m, useScroll, useTransform } from 'framer-motion';
 import { ArrowUpRight, Link2, Orbit, Search, ShieldCheck } from 'lucide-react';
 import { Reveal, useLandingReducedMotion } from './landing-motion';
 import styles from './sections.module.css';
@@ -14,6 +14,36 @@ export interface LandingConnector {
   accentClassName: string;
 }
 const categories = ['All tools', 'Engineering', 'Knowledge'] as const;
+
+function ConnectionScene({ connectors }: { connectors: LandingConnector[] }) {
+  const stage = useRef<HTMLDivElement>(null);
+  const reduced = useLandingReducedMotion();
+  const { scrollYProgress } = useScroll({ target: stage, offset: ['start end', 'end start'] });
+  const near = useTransform(scrollYProgress, [0, 1], [30, -30]);
+  const far = useTransform(scrollYProgress, [0, 1], [-18, 18]);
+
+  return (
+    <div ref={stage} className={styles.connectionStage} aria-hidden="true">
+      <Reveal sequence className={styles.connectionScene}>
+        {connectors.map((connector, index) => (
+          <m.span
+            key={connector.name}
+            className={`${styles.sceneTile} ${connector.accentClassName}`}
+            style={{ y: reduced ? 0 : index % 2 === 0 ? near : far }}
+          >
+            {connector.mark}
+          </m.span>
+        ))}
+        <div className={styles.sceneCenter}>
+          <Orbit size={35} />
+          <strong>Shared context</strong>
+          <span>One connected workspace.</span>
+        </div>
+        <p>Bring the work into Orbit.</p>
+      </Reveal>
+    </div>
+  );
+}
 
 export function IntegrationShowcase({ connectors }: { connectors: LandingConnector[] }) {
   const [category, setCategory] = useState<(typeof categories)[number]>('All tools');
@@ -28,19 +58,7 @@ export function IntegrationShowcase({ connectors }: { connectors: LandingConnect
 
   return (
     <div className={styles.integrationLayout}>
-      <Reveal sequence className={styles.connectionScene} aria-hidden="true">
-        {connectors.map((connector) => (
-          <span key={connector.name} className={`${styles.sceneTile} ${connector.accentClassName}`}>
-            {connector.mark}
-          </span>
-        ))}
-        <div className={styles.sceneCenter}>
-          <Orbit size={35} />
-          <strong>Shared context</strong>
-          <span>One connected workspace.</span>
-        </div>
-        <p>Bring the work into Orbit.</p>
-      </Reveal>
+      <ConnectionScene connectors={connectors} />
       <div className={styles.catalog}>
         <div className={styles.catalogIntro}>
           <div>
